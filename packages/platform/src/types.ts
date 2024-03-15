@@ -12,8 +12,13 @@ export type IntlString<P extends Params = {}> = (params: P) => string
 
 // S T A T U S
 
+export enum Result {
+  OK,
+  ERROR,
+}
+
 export interface Status<P extends Params = {}> {
-  // readonly code: ResourceDescriptor<Status<P>>
+  readonly result: Result
   readonly message?: {
     readonly i18n: IntlString<P>
     readonly params: P
@@ -24,24 +29,22 @@ export interface Status<P extends Params = {}> {
 
 export type ResourceId = string & { __tag: 'resource' }
 
-export interface ResourceOptions<R = any> {
-  __resource: R
-  readonly metadata: Params
-}
-
-export interface ResourceDescriptor<R = any> {
-  readonly id: ResourceId
-  readonly options: ResourceOptions<R>
-}
-
 // E F F E C T
 
-export interface Value<V, S extends Status = Status> {
-  then(success: (value: V) => void, failure: (status: S) => void): void
+export interface Value<V = any, S extends Status = Status> {
+  then(success: (value: V) => void, failure?: (status: S) => void): void
 }
 
-export interface Context {
-  get<R>(resource: ResourceDescriptor<R>): R
-}
+export interface Context {}
 
-export type Effect<V, S extends Status> = (ctx: Context) => Value<V, S>
+export type Effect<V = any, S extends Status = Status> = (
+  ctx: Context,
+) => Value<V, S>
+
+// P L A T F O R M
+
+// export interface Platform {
+//   success<T>(x: T): Value<T>
+//   failure<S extends Status>(x: S): Value<never, S>
+//   run<T, S extends Status>(effect: Effect<T, S>): Value<T, S>
+// }

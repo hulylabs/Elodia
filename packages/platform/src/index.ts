@@ -5,4 +5,14 @@
  * Huly Platform Package.
  */
 
-console.log('Hello from Huly Platform!')
+import { Console } from './console'
+import { Platform } from './platform'
+
+export const platform = Platform.plugin('platform', {
+  const: {
+    N42: Platform.success(42),
+  },
+  service: {
+    Console: Platform.success(Console),
+  },
+})
