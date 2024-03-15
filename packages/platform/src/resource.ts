@@ -3,9 +3,18 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { type OptParams } from './types'
+import type {
+  Context,
+  OptParams,
+  Platform,
+  ResourceDescriptor,
+  ResourceId,
+  ResourceOptions,
+  Status,
+  Value,
+} from './types'
 
-export type ResourceId = string & { __tag: 'resource' }
+// R E S O U R C E  I D
 
 export function makeResourceId(
   plugin: string,
@@ -20,12 +29,9 @@ export function parseResourceId(id: ResourceId): [string, string, string] {
   return [plugin, category, name]
 }
 
-interface ResourceOptions<R = any> {
-  __resource: R
-  metadata: OptParams
-}
+// R E S O U R C E  D E S C R I P T O R
 
-export class ResourceDescriptor<R = any> {
+class Descriptor<R = any> implements ResourceDescriptor<R> {
   readonly id: ResourceId
   readonly options: ResourceOptions<R>
 
@@ -62,7 +68,7 @@ function category<R extends CategoryOptions>(
 ): CategoryOptionsToDescriptors<R> {
   const result: CategoryDescriptors = {}
   for (const key in resources) {
-    result[key] = new ResourceDescriptor(
+    result[key] = new Descriptor(
       makeResourceId(plugin, category, key),
       resources[key],
     )
@@ -79,4 +85,52 @@ export function plugin<O extends PluginOptions>(
     result[key] = category(name, key, resources[key])
   }
   return result as PluginOptionsToDescriptors<O>
+}
+
+// E F F E C T
+
+class Success<V, S extends Status> implements Value<V, S> {
+  private value: V
+
+  constructor(value: V) {
+    this.value = value
+  }
+
+  public then(success: (value: V) => void, _: (status: S) => void): void {
+    success(this.value)
+  }
+}
+
+class Failure<V, S extends Status> implements Value<V, S> {
+  private status: S
+
+  constructor(status: S) {
+    this.status = status
+  }
+
+  public then(_: (value: V) => void, failure: (status: S) => void): void {
+    failure(this.status)
+  }
+}
+
+class PlatformContext implements Context {
+  get<T>(resource: ResourceDescriptor<T>): T {}
+
+  success<V, S extends Status>(value: V): Value<V, S> {
+    return new Success(value)
+  }
+
+  failure<V, S extends Status>(status: S): Value<V, S> {
+    return new Failure(status)
+  }
+}
+
+export class PlatformBase implements Platform {
+  success<T>(x: T): Value<T, Status> {
+    return new Success(x)
+  }
+
+  failure<S extends Status>(x: S): Value<never, S> {
+    return new Failure(x)
+  }
 }

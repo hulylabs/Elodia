@@ -3,25 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { ResourceDescriptor } from './resource'
-import type { IntlString, OptParams } from './types'
-
-// export enum Result {
-//   OK,
-//   ERROR,
-// }
-
-interface Status<P extends OptParams = undefined> {
-  readonly code: ResourceDescriptor<Status<P>>
-  readonly message?: {
-    readonly i18n: IntlString<P>
-    readonly params: P
-  }
-}
-
-interface Value<V, S extends Status> {
-  then(success: (value: V) => void, failure: (status: S) => void): void
-}
+import type { ResourceDescriptor, Status, Value } from './types'
 
 class Success<V, S extends Status> implements Value<V, S> {
   private value: V
@@ -47,7 +29,7 @@ class Failure<V, S extends Status> implements Value<V, S> {
   }
 }
 
-export class Context {
+class Context {
   get<T>(resource: ResourceDescriptor<T>): T {}
 
   success<V, S extends Status>(value: V): Value<V, S> {
@@ -58,5 +40,3 @@ export class Context {
     return new Failure(status)
   }
 }
-
-export type Effect<V, S extends Status> = (ctx: Context) => Value<V, S>

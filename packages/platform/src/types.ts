@@ -13,18 +13,41 @@ export type IntlString<P extends OptParams = undefined> = (params: P) => string
 
 // S T A T U S
 
-// export enum Severity {
-//   OK,
-//   INFO,
-//   WARN,
-//   ERROR,
-// }
+export interface Status<P extends OptParams = undefined> {
+  readonly code: ResourceDescriptor<Status<P>>
+  readonly message?: {
+    readonly i18n: IntlString<P>
+    readonly params: P
+  }
+}
 
-// export interface Status<P extends Params = void> {
-//   readonly severity: Severity
-//   readonly code: ResourceId
-//   readonly params: P
-//   readonly i18n: IntlString<P>
-// }
+// R E S O U R C E
 
-// export type StatusFactory<P extends Params = void> = (params: P) => Status<P>
+export type ResourceId = string & { __tag: 'resource' }
+
+export interface ResourceOptions<R = any> {
+  __resource: R
+  readonly metadata: OptParams
+}
+
+export interface ResourceDescriptor<R = any> {
+  readonly id: ResourceId
+  readonly options: ResourceOptions<R>
+}
+
+// E F F E C T
+
+export interface Value<V, S extends Status> {
+  then(success: (value: V) => void, failure: (status: S) => void): void
+}
+
+export interface Context {
+  get<R>(resource: ResourceDescriptor<R>): R
+}
+
+export type Effect<V, S extends Status> = (ctx: Context) => Value<V, S>
+
+export interface Platform {
+  success<T>(x: T): Value<T, Status>
+  failure<S extends Status>(x: S): Value<never, S>
+}
