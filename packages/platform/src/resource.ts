@@ -125,12 +125,19 @@ class PlatformContext implements Context {
   }
 }
 
-export class PlatformBase implements Platform {
-  success<T>(x: T): Value<T, Status> {
-    return new Success(x)
-  }
-
-  failure<S extends Status>(x: S): Value<never, S> {
-    return new Failure(x)
-  }
+export function success<T>(x: T): Value<T, Status> {
+  return new Success(x)
 }
+
+export function failure<S extends Status>(x: S): Value<never, S> {
+  return new Failure(x)
+}
+
+export function syncResource<T>(): ResourceDescriptor<T> {}
+
+export const platform = plugin('platform', {
+  service: {
+    Logger: syncResource(),
+    I18n: syncResource(),
+  },
+})
