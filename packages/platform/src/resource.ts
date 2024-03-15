@@ -25,11 +25,11 @@ interface ResourceOptions<R = any> {
   metadata: OptParams
 }
 
-class ResourceDescriptor<O extends ResourceOptions> {
+class ResourceDescriptor<R = any> {
   readonly id: ResourceId
-  readonly options: O
+  readonly options: ResourceOptions<R>
 
-  constructor(id: ResourceId, options: O) {
+  constructor(id: ResourceId, options: ResourceOptions<R>) {
     this.id = id
     this.options = options
   }
@@ -46,7 +46,9 @@ type CategoryDescriptors = Record<string, ResourceDescriptor<any>>
 type PluginDescriptors = Record<string, CategoryDescriptors>
 
 type CategoryOptionsToDescriptors<R extends CategoryOptions> = {
-  [K in keyof R]: ResourceDescriptor<R[K]>
+  [K in keyof R]: R[K] extends ResourceOptions<infer T>
+    ? ResourceDescriptor<T>
+    : never
 }
 
 type PluginOptionsToDescriptors<R extends PluginOptions> = {
