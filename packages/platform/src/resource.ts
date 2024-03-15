@@ -25,7 +25,7 @@ interface ResourceOptions<R = any> {
   metadata: OptParams
 }
 
-class ResourceDescriptor<R = any> {
+export class ResourceDescriptor<R = any> {
   readonly id: ResourceId
   readonly options: ResourceOptions<R>
 
@@ -80,9 +80,3 @@ export function plugin<O extends PluginOptions>(
   }
   return result as PluginOptionsToDescriptors<O>
 }
-
-// export const platform = plugin('platform', {
-//   service: {
-//     Log: Resource<Log>(),
-//   },
-// })

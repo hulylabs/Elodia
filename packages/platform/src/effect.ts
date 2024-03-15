@@ -3,15 +3,24 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import type { Resource, Status } from './types'
+import { ResourceDescriptor } from './resource'
+import type { IntlString, OptParams } from './types'
 
-export enum Result {
-  OK,
-  ERROR,
+// export enum Result {
+//   OK,
+//   ERROR,
+// }
+
+interface Status<P extends OptParams = undefined> {
+  readonly code: ResourceDescriptor<Status<P>>
+  readonly message?: {
+    readonly i18n: IntlString<P>
+    readonly params: P
+  }
 }
 
 interface Value<V, S extends Status> {
-  then(ok: (value: V) => void, error: (status: S) => void): void
+  then(success: (value: V) => void, failure: (status: S) => void): void
 }
 
 class Success<V, S extends Status> implements Value<V, S> {
@@ -39,7 +48,7 @@ class Failure<V, S extends Status> implements Value<V, S> {
 }
 
 export class Context {
-  getService<T>(resource: Resource<T>): T {}
+  get<T>(resource: ResourceDescriptor<T>): T {}
 
   success<V, S extends Status>(value: V): Value<V, S> {
     return new Success(value)
