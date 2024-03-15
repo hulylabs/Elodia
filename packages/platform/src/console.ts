@@ -3,7 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { Void } from './platform'
+import { Platform } from './platform'
 import type { Effect } from './types'
 
 interface Console {
@@ -17,10 +17,8 @@ interface Console {
 }
 
 export const Console: Console = {
-  info:
-    (...args: ReadonlyArray<any>): Effect<void> =>
-    () => {
+  info: (...args: ReadonlyArray<any>) =>
+    Platform.runSync(() => {
       console.log(...args)
-      return Void
-    },
+    }),
 }

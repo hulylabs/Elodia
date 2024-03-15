@@ -6,7 +6,7 @@
  */
 
 import { Console } from './console'
-import { Platform, Void } from './platform'
+import { Platform } from './platform'
 
 export const platform = Platform.plugin('platform', {
   const: {
@@ -17,10 +17,9 @@ export const platform = Platform.plugin('platform', {
   },
 })
 
-const code = Platform.code(function* () {
+const code = Platform.runProgram(function* () {
   const value = yield Platform.success(42)
   console.log('inside program', value)
-  return Void
 })
 
-Platform.run(code)
+console.log('code', Platform.run(code))

@@ -22,32 +22,21 @@ export function parseResourceId(id: ResourceId): [string, string, string] {
 
 // U T I L I T Y
 
-export function mapRecord<K extends string, V, Q>(
-  obj: Record<K, V>,
-  fn: (value: V) => Q,
-): Record<K, Q> {
-  const result = {} as Record<K, Q>
-  for (const key in obj) {
-    result[key] = fn(obj[key])
-  }
-  return result
-}
+// export function mapRecord<K extends string, V, Q>(
+//   obj: Record<K, V>,
+//   fn: (value: V) => Q,
+// ): Record<K, Q> {
+//   const result = {} as Record<K, Q>
+//   for (const key in obj) {
+//     result[key] = fn(obj[key])
+//   }
+//   return result
+// }
 
 // R E S O U R C E  D E S C R I P T O R
 
 type Effects = Record<string, Effect>
 type PluginEffects = Record<string, Effects>
-
-// type CategoryValues = Record<string, Value>
-// type PluginValues = Record<string, CategoryValues>
-
-type ToValues<E extends Effects> = {
-  [K in keyof E]: E[K] extends Effect<infer T, infer S> ? Value<T, S> : never
-}
-
-type PluginToValues<P extends PluginEffects> = {
-  [K in keyof P]: ToValues<P[K]>
-}
 
 // V A L U E S
 
@@ -112,8 +101,8 @@ class Failure<V, S extends Status> implements SyncValue<V, S> {
 
 const context: Context = {}
 
-const toValues = <R extends Effects>(resources: R): ToValues<R> =>
-  mapRecord(resources, (effect) => effect(context)) as ToValues<R>
+// const toValues = <R extends Effects>(resources: R): ToValues<R> =>
+//   mapRecord(resources, (effect) => effect(context)) as ToValues<R>
 
 const runSync =
   <T, S extends Status>(fn: () => T): Effect<T, S> =>
@@ -162,17 +151,9 @@ export const Platform = Object.freeze({
   runSync,
   runProgram,
 
-  plugin: <R extends PluginEffects>(
-    _name: string,
-    resources: R,
-  ): PluginToValues<R> => mapRecord(resources, toValues) as PluginToValues<R>,
-})
+  run: <R, S extends Status>(effect: Effect<R, S>): Value<R, S> =>
+    effect(context),
 
-// export const StatusOK: Status = { result: Result.OK }
-export const VoidValue: Value<void> = Object.freeze({
-  then: (success: () => void): void => {
-    return success()
-  },
+  plugin: <R extends PluginEffects>(_name: string, resources: R): R =>
+    resources,
 })
-
-export const Void: Effect<void> = () => VoidValue
