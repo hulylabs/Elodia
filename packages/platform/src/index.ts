@@ -19,7 +19,9 @@ export const platform = Platform.plugin('platform', {
 
 const code = Platform.runProgram(function* () {
   const value = yield Platform.success(42)
-  console.log('inside program', value)
+  // const console = yield platform.service.Console
+  console.info('inside program', value)
+  return 55
 })
 
 console.log('code', Platform.run(code))

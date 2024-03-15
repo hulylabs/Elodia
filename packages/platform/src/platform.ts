@@ -130,7 +130,7 @@ function iterateCode<R>(code: Generator<Effect, R, Effect>): R {
 }
 
 const runProgram =
-  <R,>(generatorFn: () => Generator<Effect, R, Effect>): Effect<R> =>
+  <R,>(generatorFn: () => Generator<Effect, R>): Effect<R> =>
   () =>
     new Success(iterateCode(generatorFn()))
 
