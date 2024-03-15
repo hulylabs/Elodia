@@ -1,0 +1,10 @@
+{
+  "name": "huly-core",
+  "private": false,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}
