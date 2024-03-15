@@ -4,8 +4,7 @@
 //
 
 import { expect, test } from 'bun:test'
-import { Log } from '../src/log'
-import { $res, makeResourceId, parseResourceId, plugin } from '../src/resource'
+import { makeResourceId, parseResourceId } from '../src/platform'
 
 test('ResourceId', () => {
   const [plugin, category, name] = parseResourceId(

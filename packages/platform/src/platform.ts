@@ -4,7 +4,6 @@
 //
 
 import type { Context, Effect, ResourceId, Status, Value } from './types'
-import { Result } from './types'
 
 // R E S O U R C E  I D
 
@@ -147,10 +146,10 @@ export const Platform = Object.freeze({
   run: <T, S extends Status>(effect: Effect<T, S>): Value<T, S> =>
     effect(context),
   code:
-    (generatorFn: () => Generator<Effect, Effect>): Effect =>
+    (generatorFn: () => Generator<Effect, Effect, Effect>): Effect =>
     () => {
       runProgram(generatorFn())
-      return Void
+      return VoidValue
     },
 
   plugin: <R extends PluginEffects>(
@@ -160,8 +159,10 @@ export const Platform = Object.freeze({
 })
 
 // export const StatusOK: Status = { result: Result.OK }
-export const Void: Value<void> = Object.freeze({
+export const VoidValue: Value<void> = Object.freeze({
   then: (success: () => void): void => {
     return success()
   },
 })
+
+export const Void: Effect<void> = () => VoidValue
