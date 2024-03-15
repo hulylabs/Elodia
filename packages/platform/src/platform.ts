@@ -108,12 +108,23 @@ class Failure<V, S extends Status> implements SyncValue<V, S> {
   }
 }
 
-// G E N E R A T O R
+// P L A T F O R M
 
 const context: Context = {}
 
-function runProgram(code: Generator<Effect, Effect>): void {
-  for (let block = code.next(); !block.done; ) {
+const toValues = <R extends Effects>(resources: R): ToValues<R> =>
+  mapRecord(resources, (effect) => effect(context)) as ToValues<R>
+
+const runSync =
+  <T, S extends Status>(fn: () => T): Effect<T, S> =>
+  () => {
+    // TODO: catch sync exceptions
+    return new Success(fn())
+  }
+
+function iterateCode<R>(code: Generator<Effect, R, Effect>): R {
+  let block = code.next()
+  while (!block.done) {
     const effect = block.value
     const value = effect(context) as SyncValue<any, Status>
     if (value.isSync()) {
@@ -126,31 +137,30 @@ function runProgram(code: Generator<Effect, Effect>): void {
       throw new Error('Async value')
     }
   }
+  return block.value
 }
 
-// P L A T F O R M
+const runProgram =
+  <R,>(generatorFn: () => Generator<Effect, R, Effect>): Effect<R> =>
+  () =>
+    new Success(iterateCode(generatorFn()))
 
-const toValues = <R extends Effects>(resources: R): ToValues<R> =>
-  mapRecord(resources, Platform.run) as ToValues<R>
+const success =
+  <T,>(x: T): Effect<T> =>
+  () =>
+    new Success(x)
+
+const failure =
+  <S extends Status>(x: S): Effect<never, S> =>
+  () =>
+    new Failure(x)
 
 export const Platform = Object.freeze({
-  success:
-    <T,>(x: T): Effect<T> =>
-    () =>
-      new Success(x),
-  failure:
-    <S extends Status>(x: S): Effect<never, S> =>
-    () =>
-      new Failure(x),
+  success,
+  failure,
 
-  run: <T, S extends Status>(effect: Effect<T, S>): Value<T, S> =>
-    effect(context),
-  code:
-    (generatorFn: () => Generator<Effect, Effect, Effect>): Effect =>
-    () => {
-      runProgram(generatorFn())
-      return VoidValue
-    },
+  runSync,
+  runProgram,
 
   plugin: <R extends PluginEffects>(
     _name: string,

@@ -18,7 +18,8 @@ export const platform = Platform.plugin('platform', {
 })
 
 const code = Platform.code(function* () {
-  console.log('inside program')
+  const value = yield Platform.success(42)
+  console.log('inside program', value)
   return Void
 })
 
