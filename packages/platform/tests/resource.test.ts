@@ -6,6 +6,8 @@
 import { expect, test } from 'bun:test'
 
 import { Resources } from '../src/resource'
+import { $status } from '../src/status'
+import { Result } from '../src/types'
 
 test('Resources.plugin', () => {
   const plugin = Resources.plugin('plugin', (_) => ({
@@ -15,6 +17,7 @@ test('Resources.plugin', () => {
     },
     status: {
       OK: _.factory((id) => id + '-OK'),
+      ERROR: _.factory($status<{ text: string }>(Result.ERROR)),
     },
     const: {
       N5: 5,
@@ -24,4 +27,8 @@ test('Resources.plugin', () => {
   expect(plugin.class.Class as string).toEqual('plugin:class:Class')
   expect(plugin.status.OK).toEqual('plugin:status:OK-OK')
   expect(plugin.const.N5).toEqual(5)
+
+  const status = plugin.status.ERROR({ text: 'hello' })
+  expect(status.id).toEqual('plugin:status:ERROR')
+  expect(status.params.text).toEqual('hello')
 })

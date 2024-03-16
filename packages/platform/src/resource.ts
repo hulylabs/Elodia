@@ -3,23 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-/**
- * In the Huly Platform, a "ResourceId" is a unique identifier that represents a reference
- * to an entity such as an object, function, asset, or UI component, all of which are
- * contributed by plugins. A ResourceId is essentially a string like 'core:function:Optimize',
- * which can be utilized at runtime to retrieve its linked resource. This ID-centric approach
- * is foundational to the platform's modular and scalable architecture.
- *
- * The ResourceId<T> type provides strong typing for identifiers to ensure proper usage
- * within the system, enforcing type safety and preventing misuse.
- *
- * Example:
- *
- * // Logging a ResourceId will output the string ID
- * console.log(core.function.Optimize);  // Output: 'core:function:Optimize'
- */
-
-export type ResourceId<T> = string & { __resource: T }
+import type { ResourceId } from './types'
 
 interface ValueSubstitutionPolicy {
   replaceWithId: boolean

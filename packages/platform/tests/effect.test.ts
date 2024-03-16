@@ -7,7 +7,7 @@ import { expect, test } from 'bun:test'
 
 import { Effects } from '../src/effect'
 
-test('Effects.succes', () => {
+test('Effects.success', () => {
   Effects.success(42).then((value) => {
     expect(value).toEqual(42)
   })
