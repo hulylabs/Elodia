@@ -7,7 +7,7 @@
 
 import { Console } from './console'
 import { Effects } from './effect'
-import { Resources, type Resource } from './resource'
+import { Resources } from './resource'
 
 interface XYZ {
   tx: string
