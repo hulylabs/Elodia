@@ -8,7 +8,7 @@
 import { core } from '../src/core'
 import { dsl } from '../src/dsl'
 
-export const model = dsl.model('core', {
+const model = dsl.model('core', {
   Obj: dsl.class(core.class.Obj, core.class.Obj, {
     class: dsl.attr().ref(core.class.Class),
   }),
@@ -25,3 +25,6 @@ export const model = dsl.model('core', {
     extends: dsl.attr().ref(core.class.Class),
   }),
 })
+
+console.dir(core)
+console.dir(model)

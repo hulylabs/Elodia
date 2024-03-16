@@ -3,10 +3,10 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { Resources } from '@huly/platform'
+import { Resources, type IntlString } from '@huly/platform'
 import type { Class, DataType, Doc, Obj, Ref } from '../src/model'
 
-export const core = Resources.plugin('plugin', (_) => ({
+export const core = Resources.plugin('core', (_) => ({
   class: {
     Obj: _<Ref<Class<Obj>>>(),
     Doc: _<Ref<Class<Doc>>>(),
@@ -14,5 +14,8 @@ export const core = Resources.plugin('plugin', (_) => ({
   },
   datatype: {
     String: _<Ref<DataType>>(),
+  },
+  label: {
+    CreatedOn: _<IntlString>(),
   },
 }))

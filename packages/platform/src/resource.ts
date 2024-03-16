@@ -5,6 +5,8 @@
 
 import type { ResourceId } from './types'
 
+type PluginId = string & { __tag: 'plugin' }
+
 interface Factory<V> {
   __factory: (id: ResourceId<V>) => V
 }
@@ -28,7 +30,7 @@ function mapObject<T, U>(
   for (const key in values) {
     result[key] = fn(prefix + ':' + key, values[key])
   }
-  return Object.freeze(result)
+  return result
 }
 
 function isFactory(value: unknown): value is Factory<unknown> {
@@ -47,14 +49,13 @@ const factoryProvider = <V,>(factory?: (id: ResourceId<V>) => V) => ({
   __factory: factory || ((id: ResourceId<V>) => id),
 })
 
-const plugin = <R extends PluginResources>(
-  name: string,
-  init: (_: FactoryProvider) => R,
-): PluginResourcesAfterFactories<R> =>
-  mapObject(init(factoryProvider), name, (name, category) =>
+const plugin = <R extends PluginResources>(name: string, init: (_: FactoryProvider) => R) => ({
+  id: name as PluginId,
+  ...(mapObject(init(factoryProvider), name, (name, category) =>
     mapObject(category, name, (id, value) => callFactory(id, value)),
-  ) as PluginResourcesAfterFactories<R>
-
-export const Resources = Object.freeze({
-  plugin,
+  ) as PluginResourcesAfterFactories<R>),
 })
+
+export const Resources = {
+  plugin,
+}

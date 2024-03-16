@@ -3,8 +3,17 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import type { IntlString, Params, ResourceId } from '@huly/platform'
-import type { Class, DataType, Doc, Obj, Ref } from './model'
+import type { IntlString, ResourceId } from '@huly/platform'
+import type { Class, Doc, Obj, Ref } from './model'
+
+export abstract class UXDeclaration {
+  uxLabel?: IntlString
+
+  label(label: IntlString) {
+    this.uxLabel = label
+    return this
+  }
+}
 
 export abstract class DataTypeDeclaration {}
 
@@ -82,22 +91,4 @@ export const dsl = {
   attr() {
     return new AttributeDeclaration()
   },
-  // ref(class: ResourceId<Ref<Class<Obj>>>)
 }
-
-// interface UXDefinition {
-//   label<M extends Params>(label: IntlString<M>): this
-// }
-
-// interface DataTypeDefinition {}
-
-// interface ClassDefinition {}
-
-// const model = {
-//   // x: IntlString,
-//   // ref(): DataTypeDefinition {},
-// }
-
-// const Obj = {
-//   class: 'Ref<Class<this>>',
-// }

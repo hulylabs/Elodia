@@ -112,10 +112,10 @@ const runSync = <T, M extends Params, P extends M>(effect: Effect<T, M, P>): T =
   return value
 }
 
-export const Effects = Object.freeze({
+export const Effects = {
   syncCode,
   sync,
   success,
   failure,
   runSync,
-})
+}

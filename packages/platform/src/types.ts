@@ -6,7 +6,7 @@
 export type Primitive = string | number | boolean
 export type Params = Record<string, Primitive> | void
 
-export type IntlString<P extends Params> = (params: P) => string
+export type IntlString<P extends Params = void> = (params: P) => string
 
 /**
  * In the Huly Platform, a "ResourceId" is a unique identifier that represents a reference
