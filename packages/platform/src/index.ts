@@ -19,7 +19,7 @@ export const platform = Resources.plugin('platform', (ident) => ({
     Class: ident.internal('trx'),
   },
   status: {
-    OK: ident.factory((id: Resource<string>) => id + 'OK'),
+    OK: ident.factory((id) => id + 'OK'),
   },
   const: {
     N55: 5,
@@ -40,6 +40,7 @@ console.log(x)
 console.log(y)
 console.log(z)
 console.log(w)
+console.log(v)
 
 const prog = Effects.syncCode(function* (_) {
   const value = yield* _(Effects.success(42))

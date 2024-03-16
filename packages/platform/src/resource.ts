@@ -21,23 +21,34 @@
  * This typing ensures that each resource is used correctly according to its intended purpose.
  *
  * Example:
- * // Define a resource identifier for an optimization function
- * type OptimizeFunctionResource = Resource<() => void>;
  *
  * // Resource<T> is a string at its core. When logged, it will display 'core:function:Optimize'.
- * console.log(OptimizeFunctionResource); // Output: 'core:function:Optimize'
+ * console.log(core.function.Optimize); // Output: 'core:function:Optimize'
  */
 
 export type Resource<T> = string & { __resource: T }
 
-interface ResourceId<T> {
-  __id: boolean
-  value: T
+interface ValuePolicy {
+  keepId: boolean
+}
+
+interface KeepResourceId<T> extends ValuePolicy {
+  keepId: true
+  cacheValue?: T
+}
+
+interface CreateValueUsingId<T, V> extends ValuePolicy {
+  keepId: false
+  factory: (id: Resource<T>) => V
 }
 
 type CategoryValues = { [key: string]: unknown }
 type CategoryResources<V extends CategoryValues> = {
-  [K in keyof V]: V[K] extends ResourceId<infer T> ? Resource<T> : V[K]
+  [K in keyof V]: V[K] extends KeepResourceId<infer T>
+    ? Resource<T>
+    : V[K] extends CreateValueUsingId<any, infer V>
+      ? V
+      : V[K]
 }
 
 type PluginValues = Record<string, CategoryValues>
@@ -59,41 +70,46 @@ function mapObject<T, U>(
 
 const allResources = new Map<string, unknown>()
 
-function substitute(id: string, value: unknown) {
-  const ident = value as ResourceId<any>
-  const resolve = ident.value
-  if (ident.__id) {
-    if (resolve) {
-      allResources.set(id, resolve)
+function isValuePolicy(value: unknown): value is ValuePolicy {
+  return typeof value === 'object' && value !== null && 'keepId' in value
+}
+
+function applyPolicy(id: string, value: unknown): unknown {
+  if (isValuePolicy(value)) {
+    if (value.keepId) {
+      const keepResourceId = value as KeepResourceId<any>
+      if (keepResourceId.cacheValue) {
+        allResources.set(id, keepResourceId.cacheValue)
+      }
+      return id as Resource<any>
+    } else {
+      const createValueUsingId = value as CreateValueUsingId<any, any>
+      const result = createValueUsingId.factory(id as Resource<any>)
+      return result
     }
-    return id
-  } else {
-    if (resolve) {
-      return resolve()
-    }
-    return value
   }
+  return value
 }
 
-interface Identifiers {
-  external<T>(): ResourceId<T>
-  internal<T>(value: T): ResourceId<T>
-  factory<T>(value: T): ResourceId<T>
+interface Policy {
+  external<T>(): KeepResourceId<T>
+  internal<T>(value: T): KeepResourceId<T>
+  factory<T, V>(value: (id: Resource<T>) => V): CreateValueUsingId<T, V>
 }
 
-const external = {
-  __id: true,
-} as ResourceId<void>
-
-const ident: Identifiers = {
-  external: <T,>(): ResourceId<T> => external as ResourceId<T>,
-  internal: <T,>(value: T): ResourceId<T> => ({ __id: true, value }),
-  factory: <T,>(value: T): ResourceId<T> => ({ __id: false, value }),
+const external: KeepResourceId<any> = {
+  keepId: true,
 }
 
-function plugin<R extends PluginValues>(name: string, init: (ident: Identifiers) => R): PluginResources<R> {
+const ident: Policy = {
+  external: <T,>(): KeepResourceId<T> => external,
+  internal: <T,>(cacheValue: T): KeepResourceId<T> => ({ keepId: true, cacheValue }),
+  factory: <T, V>(factory: (id: Resource<T>) => V): CreateValueUsingId<T, V> => ({ keepId: false, factory }),
+}
+
+function plugin<R extends PluginValues>(name: string, init: (policy: Policy) => R): PluginResources<R> {
   return mapObject(init(ident), name, (name, category) =>
-    mapObject(category, name, (id, value) => substitute(id, value)),
+    mapObject(category, name, (id, value) => applyPolicy(id, value)),
   ) as PluginResources<R>
 }
 
