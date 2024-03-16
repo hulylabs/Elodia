@@ -29,6 +29,6 @@ test('Resources.plugin', () => {
   expect(plugin.const.N5).toEqual(5)
 
   const status = plugin.status.ERROR({ text: 'hello' })
-  expect(status.id).toEqual('plugin:status:ERROR')
+  expect(status.id as string).toEqual('plugin:status:ERROR')
   expect(status.params.text).toEqual('hello')
 })

@@ -4,7 +4,7 @@
 //
 
 export type Primitive = string | number | boolean
-export type Params = Record<string, Primitive>
+export type Params = Record<string, Primitive> | void
 
 export type IntlString<P extends Params> = (params: P) => string
 
@@ -33,13 +33,9 @@ export enum Result {
   ERROR,
 }
 
-export type StatusFactoryFactory<P extends Params> = (
-  id: ResourceId<(params: P) => Status<P>>,
-) => (params: P) => Status<P>
-
-export interface Status<P extends Params> {
-  readonly id: ResourceId<(params: P) => Status<P>>
+export interface Status<M extends Params = void, P extends M = M> {
+  readonly id: ResourceId<(params: P) => Status<M, P>>
   readonly result: Result
   readonly params: P
-  readonly message?: IntlString<P>
+  readonly message?: IntlString<M>
 }
