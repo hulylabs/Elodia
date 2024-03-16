@@ -16,19 +16,19 @@ test('Resources.plugin', () => {
       Class: _<string>(),
     },
     status: {
-      OK: _((id) => id + '-OK'),
+      OK: _<string>((id) => id + '-OK'),
       ERROR: _($status<{ text: string }>(Result.ERROR)),
     },
     const: {
       N5: 5,
     },
   }))
-  expect(plugin.class.Object as string).toEqual('plugin:class:Object')
-  expect(plugin.class.Class as string).toEqual('plugin:class:Class')
-  expect(plugin.status.OK).toEqual('plugin:status:OK-OK')
-  expect(plugin.const.N5).toEqual(5)
+  expect(plugin.class.Object as string).toBe('plugin:class:Object')
+  expect(plugin.class.Class as string).toBe('plugin:class:Class')
+  expect(plugin.status.OK).toBe('plugin:status:OK-OK')
+  expect(plugin.const.N5).toBe(5)
 
   const status = plugin.status.ERROR.create({ text: 'hello' })
-  expect(status.id as string).toEqual('plugin:status:ERROR')
-  expect(status.params.text).toEqual('hello')
+  expect(status.id as string).toBe('plugin:status:ERROR')
+  expect(status.params.text).toBe('hello')
 })

@@ -18,17 +18,17 @@ const plugin = Resources.plugin('plugin', (_) => ({
 
 test('Effects.success', () => {
   Effects.success(42).then((value) => {
-    expect(value).toEqual(42)
+    expect(value).toBe(42)
   })
 })
 
 test('Effects.syncCode / success', () => {
   Effects.syncCode(function* (_) {
     const hello = yield* _(Effects.success('hello'))
-    expect(hello).toEqual('hello')
+    expect(hello).toBe('hello')
     return 'hey there!'
   }).then((value) => {
-    expect(value).toEqual('hey there!')
+    expect(value).toBe('hey there!')
   })
 })
 
@@ -42,14 +42,13 @@ test('Effects.syncCode / failure', () => {
 
   effect.then(
     (value) => {
-      console.log('THEN')
-      expect(value).toEqual('hey there!')
+      expect(value).toBe('hey there!')
     },
     (s) => {
       const status = plugin.status.Error.cast(s)
-      expect(status.id).toEqual(plugin.status.Error.id)
-      expect(status.params.text).toEqual('hello')
-      expect(status.result).toEqual(Result.ERROR)
+      expect(status.id).toBe(plugin.status.Error.id)
+      expect(status.params.text).toBe('hello')
+      expect(status.result).toBe(Result.ERROR)
     },
   )
 })

@@ -55,6 +55,6 @@ const plugin = <R extends PluginResources>(
     mapObject(category, name, (id, value) => callFactory(id, value)),
   ) as PluginResourcesAfterFactories<R>
 
-export const Resources = {
+export const Resources = Object.freeze({
   plugin,
-}
+})
