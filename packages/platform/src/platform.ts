@@ -34,13 +34,28 @@ function execute<R>(code: Code<R>): R {
   return block.done ? block.value : execute(block.value)
 }
 
-const syncExtractor = (<T extends any>(effect: SyncEffect<T>): Code<T> => effect.code) as CodeExtractor
+function syncExtractor<T extends any>(effect: Effect<T> & SyncEffect): Code<T> {
+  if (effect.hasCode) {
+    return (effect as SyncCode<T>).code
+  } else {
+    throw (effect as SyncFailure<T>).status
+  }
+}
 
-class SyncEffect<V, S extends Status = Status> implements Effect<V, S> {
+abstract class SyncEffect {
+  readonly hasCode: boolean
+
+  constructor(hasCode: boolean) {
+    this.hasCode = hasCode
+  }
+}
+
+class SyncCode<V, S extends Status = Status> extends SyncEffect implements Effect<V, S> {
   readonly code: Code<V>
 
   constructor(program: Program<V>) {
-    this.code = program(syncExtractor)
+    super(true)
+    this.code = program(syncExtractor as CodeExtractor)
   }
 
   public then(success: (value: V) => void, _?: (status: S) => void): void {
@@ -48,24 +63,40 @@ class SyncEffect<V, S extends Status = Status> implements Effect<V, S> {
   }
 }
 
+class SyncFailure<V, S extends Status = Status> extends SyncEffect implements Effect<V, S> {
+  readonly status: S
+
+  constructor(status: S) {
+    super(false)
+    this.status = status
+  }
+
+  public then(_: (value: V) => void, failure?: (status: S) => void): void {
+    failure?.(this.status)
+  }
+}
+
 // P L A T F O R M
 
-const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncEffect<R, Status>(program)
+const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncCode<R, Status>(program)
 
 const success = <T,>(x: T): Effect<T> =>
   syncCode(function* () {
     return x
   })
 
-// const failure =
-//   <S extends Status>(x: S): Effect<never, S> =>
-//   () =>
-//     new Failure(x)
+const failure = <S extends Status>(x: S): Effect<never, S> => new SyncFailure(x)
+
+const sync = <T, F extends () => T>(f: F): Effect<T> =>
+  syncCode(function* () {
+    return f()
+  })
 
 export const Platform = Object.freeze({
   syncCode,
+  sync,
   success,
-  // failure,
+  failure,
 
   // runSync,
   // runProgram,

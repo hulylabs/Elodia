@@ -7,8 +7,12 @@
 
 import { Console } from './console'
 import { Platform } from './platform'
+import { newStatus, Result } from './types'
 
 export const platform = Platform.plugin('platform', {
+  status: {
+    OK: Platform.success(() => newStatus(Result.OK)),
+  },
   const: {
     N42: Platform.success(42),
   },

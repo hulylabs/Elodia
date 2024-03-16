@@ -18,11 +18,16 @@ export enum Result {
 }
 
 export interface Status<P extends Params = {}> {
+  readonly code: ResourceId
   readonly result: Result
   readonly message?: {
     readonly i18n: IntlString<P>
     readonly params: P
   }
+}
+
+export function newStatus(result: Result): Status<{}> {
+  return { result } as Status<{}>
 }
 
 // R E S O U R C E  A N D  P L U G I N
