@@ -70,7 +70,7 @@ function applyPolicy(id: string, value: unknown): unknown {
 
 interface Policy {
   id<T>(cacheValue?: T): ReplaceWithResourceId<T>
-  factory<T, V>(value: (id: ResourceId<T>) => V): CreateValueUsingId<T, V>
+  factory<T, V>(value: (id: ResourceId<T>) => V): CreateValueUsingId<T, V> // TODO: T == V?
 }
 
 const ident: Policy = {

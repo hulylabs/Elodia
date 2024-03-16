@@ -17,5 +17,5 @@ export function getStatus<M extends Params, P extends M>(error: Error) {
   if (error instanceof PlatformError) {
     return error.status as Status<M, P>
   }
-  return platform.status.UnknownError({ message: error.message })
+  return platform.status.UnknownError.create({ message: error.message })
 }

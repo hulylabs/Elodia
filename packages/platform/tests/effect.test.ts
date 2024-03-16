@@ -33,8 +33,9 @@ test('Effects.syncCode / success', () => {
 
 test('Effects.syncCode / failure', () => {
   Effects.syncCode(function* (_) {
-    const status = plugin.status.Error({ text: 'hello' })
-    yield* _(Effects.failure(status))
+    const status = plugin.status.Error.create({ text: 'hello' })
+    const effect = Effects.failure(status)
+    yield* _(effect)
     return 'hey there!'
   }).then(
     (value) => {

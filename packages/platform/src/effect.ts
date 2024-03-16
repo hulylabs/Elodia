@@ -77,7 +77,7 @@ class SyncFailure<V = any, M extends Params = void, P extends M = M> extends Syn
     this.status = status
   }
 
-  public then(_: (value: V) => void, failure?: (status: S) => void): void {
+  public then(_: (value: V) => void, failure?: (status: Status<M, P>) => void): void {
     failure?.(this.status)
   }
 }
