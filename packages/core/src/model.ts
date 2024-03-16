@@ -65,7 +65,7 @@ export interface Class<T extends Obj> extends Classifier {
 
 export type DataTypeConstraint = Primitive | PrimitiveArray<Primitive>
 
-export interface DataType<T extends DataTypeConstraint> extends Doc {
+export interface DataType<T extends DataTypeConstraint = DataTypeConstraint> extends Doc {
   __type: T
 }
 

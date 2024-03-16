@@ -8,4 +8,4 @@
 export { Effects } from './effect'
 export { Resources } from './resource'
 
-export type { IntlString } from './types'
+export type { IntlString, Params, ResourceId } from './types'
