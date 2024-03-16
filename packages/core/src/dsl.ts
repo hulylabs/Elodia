@@ -3,7 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { IntlString } from '@huly/platform'
+import type { IntlString } from '@huly/platform'
 
 interface FeatureDefinition {}
 
@@ -12,7 +12,7 @@ interface DataTypeDefinition {}
 interface ClassDefinition {}
 
 const model = {
-  x: IntlString,
+  // x: IntlString,
   // ref(): DataTypeDefinition {},
 }
 
