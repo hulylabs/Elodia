@@ -42,7 +42,7 @@ function mapObject<T, U>(
   for (const key in values) {
     result[key] = fn(prefix + ':' + key, values[key])
   }
-  return result
+  return Object.freeze(result)
 }
 
 const resourceIdToValue = new Map<string, unknown>()

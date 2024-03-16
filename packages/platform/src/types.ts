@@ -39,3 +39,17 @@ export interface Status<M extends Params = void, P extends M = M> {
   readonly params: P
   readonly message?: IntlString<M>
 }
+
+export const $status =
+  <M extends Params = void, P extends M = M>(result: Result, message?: IntlString<M>) =>
+  (id: ResourceId<(params: P) => Status<M, P>>) =>
+  (params: P) => ({ id, params, result, message })
+
+export class PlatformError<M extends Params, P extends M> extends Error {
+  readonly status: Status<M, P>
+
+  constructor(status: Status<M, P>) {
+    super()
+    this.status = status
+  }
+}

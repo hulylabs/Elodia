@@ -6,8 +6,7 @@
 import { expect, test } from 'bun:test'
 
 import { Resources } from '../src/resource'
-import { $status } from '../src/status'
-import { Result } from '../src/types'
+import { $status, Result } from '../src/types'
 
 test('Resources.plugin', () => {
   const plugin = Resources.plugin('plugin', (_) => ({
