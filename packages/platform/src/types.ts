@@ -31,20 +31,6 @@ export type ResourceId = string & { __tag: 'resource' }
 
 // E F F E C T
 
-// export interface Context {}
-
 export interface Effect<V = any, S extends Status = Status> {
   then(success: (value: V) => void, failure?: (status: S) => void): void
 }
-
-// export type Effect<V = any, S extends Status = Status> = (
-//   ctx: Context,
-// ) => Value<V, S>
-
-// P L A T F O R M
-
-// export interface Platform {
-//   success<T>(x: T): Value<T>
-//   failure<S extends Status>(x: S): Value<never, S>
-//   run<T, S extends Status>(effect: Effect<T, S>): Value<T, S>
-// }
