@@ -7,10 +7,3 @@
 
 export { Effects } from './effect'
 export { Resources } from './resource'
-
-// prog.then(console.log)
-// platform.const.N42
-
-console.log(prog)
-
-console.log(Effects.runSync(prog))
