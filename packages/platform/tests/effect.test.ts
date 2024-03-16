@@ -6,8 +6,9 @@
 import { expect, test } from 'bun:test'
 
 import { Effects } from '../src/effect'
+import { $status } from '../src/platform'
 import { Resources } from '../src/resource'
-import { $status, Result } from '../src/types'
+import { Result } from '../src/types'
 
 const plugin = Resources.plugin('plugin', (_) => ({
   status: {
@@ -32,19 +33,22 @@ test('Effects.syncCode / success', () => {
 })
 
 test('Effects.syncCode / failure', () => {
-  Effects.syncCode(function* (_) {
+  const effect = Effects.syncCode(function* (_) {
     const status = plugin.status.Error.create({ text: 'hello' })
     const effect = Effects.failure(status)
     yield* _(effect)
     return 'hey there!'
-  }).then(
+  })
+
+  effect.then(
     (value) => {
       console.log('THEN')
       expect(value).toEqual('hey there!')
     },
-    (status) => {
-      expect(status.id as string).toEqual('plugin:status:Error') // TODO: preserve id
-      // expect(status.params.text).toEqual('hello') // TODO: status cast
+    (s) => {
+      const status = plugin.status.Error.cast(s)
+      expect(status.id).toEqual(plugin.status.Error.id)
+      expect(status.params.text).toEqual('hello')
       expect(status.result).toEqual(Result.ERROR)
     },
   )

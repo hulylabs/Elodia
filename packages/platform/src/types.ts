@@ -33,30 +33,15 @@ export enum Result {
   ERROR,
 }
 
+export type StatusFactory<M extends Params, P extends M = M> = {
+  id: ResourceId<StatusFactory<M, P>>
+  create: (params: P) => Status<M, P>
+  cast: (status: Status<any, any>) => Status<M, P>
+}
+
 export interface Status<M extends Params = void, P extends M = M> {
   readonly id: ResourceId<StatusFactory<M, P>>
   readonly result: Result
   readonly params: P
   readonly message?: IntlString<M>
-}
-
-type StatusFactory<M extends Params, P extends M = M> = {
-  id: ResourceId<StatusFactory<M, P>>
-  create: (params: P) => Status<M, P>
-}
-
-export const $status =
-  <M extends Params = void, P extends M = M>(result: Result, message?: IntlString<M>) =>
-  (id: ResourceId<StatusFactory<M, P>>) => ({
-    id,
-    create: (params: P) => ({ id, params, result, message }),
-  })
-
-export class PlatformError<M extends Params, P extends M> extends Error {
-  readonly status: Status<M, P>
-
-  constructor(status: Status<M, P>) {
-    super()
-    this.status = status
-  }
 }

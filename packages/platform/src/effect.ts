@@ -3,10 +3,10 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { getStatus } from './platform'
-import { PlatformError, Result, type Params, type Status } from './types'
+import { getStatus, PlatformError } from './platform'
+import { Result, type Params, type Status } from './types'
 
-export interface Effect<V = any, M extends Params = void, P extends M = M> {
+export interface Effect<V, M extends Params, P extends M> {
   then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void
 }
 
@@ -28,11 +28,11 @@ function execute<R, M extends Params, P extends M>(code: Code<R>): [Result, Stat
   }
 }
 
-function syncExtractor<T extends any>(effect: Effect<T> & SyncEffect): Code<T> {
+function syncExtractor<T, M extends Params, P extends M>(effect: Effect<T, M, P> & SyncEffect): Code<T> {
   if (effect.hasCode) {
-    return (effect as SyncCode<T>).code
+    return (effect as SyncCode<T, M, P>).code
   } else {
-    const status = (effect as SyncFailure<T>).status
+    const status = (effect as SyncFailure<T, M, P>).status
     throw new PlatformError(status)
   }
 }
@@ -45,7 +45,7 @@ abstract class SyncEffect {
   }
 }
 
-class SyncCode<V = any, M extends Params = void, P extends M = M> extends SyncEffect implements Effect<V, M, P> {
+class SyncCode<V, M extends Params, P extends M> extends SyncEffect implements Effect<V, M, P> {
   readonly code: Code<V>
 
   constructor(program: Program<V>) {
@@ -69,7 +69,7 @@ class SyncCode<V = any, M extends Params = void, P extends M = M> extends SyncEf
   }
 }
 
-class SyncFailure<V = any, M extends Params = void, P extends M = M> extends SyncEffect implements Effect<V, M, P> {
+class SyncFailure<V, M extends Params, P extends M = M> extends SyncEffect implements Effect<V, M, P> {
   readonly status: Status<M, P>
 
   constructor(status: Status<M, P>) {
@@ -85,14 +85,14 @@ class SyncFailure<V = any, M extends Params = void, P extends M = M> extends Syn
 const syncCode = <R, M extends Params, P extends M>(program: Program<R>): Effect<R, M, P> =>
   new SyncCode<R, M, P>(program)
 
-const success = <T,>(x: T): Effect<T> =>
-  syncCode(function* () {
+const success = <T, M extends Params, P extends M>(x: T): Effect<T, M, P> =>
+  syncCode<T, M, P>(function* () {
     return x
   })
 
 const failure = <M extends Params, P extends M>(x: Status<M, P>): Effect<never, M, P> => new SyncFailure(x)
 
-const sync = <T, F extends () => T>(f: F): Effect<T> =>
+const sync = <T, F extends () => T, M extends Params, P extends M>(f: F): Effect<T, M, P> =>
   syncCode(function* () {
     return f()
   })
