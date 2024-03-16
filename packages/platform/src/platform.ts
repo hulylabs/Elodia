@@ -50,12 +50,12 @@ class SyncEffect<V, S extends Status = Status> implements Effect<V, S> {
 
 // P L A T F O R M
 
+const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncEffect<R, Status>(program)
+
 const success = <T,>(x: T): Effect<T> =>
-  new SyncEffect<T, Status>(function* () {
+  syncCode(function* () {
     return x
   })
-
-const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncEffect<R, Status>(program)
 
 // const failure =
 //   <S extends Status>(x: S): Effect<never, S> =>
