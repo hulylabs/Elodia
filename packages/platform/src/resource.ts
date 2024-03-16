@@ -6,7 +6,7 @@
 export type Resource<T> = string & { __resource: T }
 
 interface ResourceId<T> {
-  __id: true
+  __id: boolean
   value: T
 }
 
@@ -34,15 +34,18 @@ function mapObject<T, U>(
 
 const allResources = new Map<string, unknown>()
 
-function addResource<T>(id: string, value: unknown): unknown {
-  const ident = value as ResourceId<T>
+function substitute(id: string, value: unknown) {
+  const ident = value as ResourceId<any>
+  const resolve = ident.value
   if (ident.__id) {
-    const resolve = ident.value
     if (resolve) {
-      allResources.set(id, value)
+      allResources.set(id, resolve)
     }
-    return id as Resource<T>
+    return id
   } else {
+    if (resolve) {
+      return resolve()
+    }
     return value
   }
 }
@@ -50,6 +53,7 @@ function addResource<T>(id: string, value: unknown): unknown {
 interface Identifiers {
   external<T>(): ResourceId<T>
   internal<T>(value: T): ResourceId<T>
+  factory<T>(value: T): ResourceId<T>
 }
 
 const external = {
@@ -59,10 +63,15 @@ const external = {
 const ident: Identifiers = {
   external: <T,>(): ResourceId<T> => external as ResourceId<T>,
   internal: <T,>(value: T): ResourceId<T> => ({ __id: true, value }),
+  factory: <T,>(value: T): ResourceId<T> => ({ __id: false, value }),
 }
 
-export function plugin<R extends PluginValues>(name: string, init: (ident: Identifiers) => R): PluginResources<R> {
+function plugin<R extends PluginValues>(name: string, init: (ident: Identifiers) => R): PluginResources<R> {
   return mapObject(init(ident), name, (name, category) =>
-    mapObject(category, name, (id, value) => addResource(id, value)),
+    mapObject(category, name, (id, value) => substitute(id, value)),
   ) as PluginResources<R>
 }
+
+export const Resources = Object.freeze({
+  plugin,
+})

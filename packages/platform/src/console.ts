@@ -3,8 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import type { Effect } from './effect'
-import { Platform } from './platform'
+import { Effects, type Effect } from './effect'
 
 interface Console {
   // debug(message: string): void
@@ -18,7 +17,7 @@ interface Console {
 
 export const Console: Console = {
   info: (...args: ReadonlyArray<any>) =>
-    Platform.sync(() => {
+    Effects.sync(() => {
       console.log(...args)
     }),
 }

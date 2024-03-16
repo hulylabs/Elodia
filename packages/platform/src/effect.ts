@@ -68,24 +68,32 @@ class SyncFailure<V, S extends Status = Status> extends SyncEffect implements Ef
 
 // P L A T F O R M
 
-export const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncCode<R, Status>(program)
+const syncCode = <R,>(program: Program<R>): Effect<R> => new SyncCode<R, Status>(program)
 
-export const success = <T,>(x: T): Effect<T> =>
+const success = <T,>(x: T): Effect<T> =>
   syncCode(function* () {
     return x
   })
 
-export const failure = <S extends Status>(x: S): Effect<never, S> => new SyncFailure(x)
+const failure = <S extends Status>(x: S): Effect<never, S> => new SyncFailure(x)
 
-export const sync = <T, F extends () => T>(f: F): Effect<T> =>
+const sync = <T, F extends () => T>(f: F): Effect<T> =>
   syncCode(function* () {
     return f()
   })
 
-export const runSync = <T,>(effect: Effect<T>): T => {
+const runSync = <T,>(effect: Effect<T>): T => {
   if ((effect as unknown as SyncEffect).hasCode) {
     return execute((effect as SyncCode<T>).code)
   } else {
     throw (effect as SyncFailure<T>).status
   }
+}
+
+export const Effects = {
+  syncCode,
+  sync,
+  success,
+  failure,
+  runSync,
 }
