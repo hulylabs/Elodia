@@ -13,7 +13,7 @@ export type PrimitiveArray<T extends Primitive> = T[]
 export const Model = 'model' as Domain
 
 export interface Obj {
-  clazz: Ref<Class<this>>
+  class: Ref<Class<this>>
 }
 export type Ref<T extends Doc> = string & { __ref: T }
 
@@ -61,23 +61,25 @@ export interface Class<T extends Obj> extends Classifier {
   implements: PrimitiveArray<Ref<Interface>>
 }
 
-// A T T R I B U T E S
+// D A T A T Y P E S
 
-type DataType = Primitive | PrimitiveArray<Primitive>
+export type DataTypeConstraint = Primitive | PrimitiveArray<Primitive>
 
-export interface Type<T extends DataType> extends Doc {
+export interface DataType<T extends DataTypeConstraint> extends Doc {
   __type: T
 }
 
-export interface StringType extends Type<string> {}
+export interface StringDataType extends DataType<string> {}
 
-export interface RefToType<T extends Doc> extends Type<Ref<T>> {
+export interface RefToDataType<T extends Doc> extends DataType<Ref<T>> {
   refTo: Ref<Class<T>>
 }
 
-export interface Attribute<T extends DataType> extends Doc {
+// A T T R I B U T E S
+
+export interface Attribute<T extends DataTypeConstraint> extends Doc {
   classifier: Ref<Class<Obj>>
   name: string
-  type: Type<T>
+  type: DataType<T>
   default?: T
 }

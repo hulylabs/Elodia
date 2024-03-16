@@ -1,7 +1,13 @@
 {
   "name": "@huly/platform",
-  "module": "index.ts",
+  "module": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outfile=lib/index.js && bun run build:declaration",
+    "build:declaration": "tsc --emitDeclarationOnly --project tsconfig.json"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

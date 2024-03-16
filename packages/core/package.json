@@ -1,7 +1,12 @@
 {
   "name": "@huly/core",
-  "module": "index.ts",
+  "module": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "type": "module",
+  "depenencies": {
+    "@huly/platform": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
