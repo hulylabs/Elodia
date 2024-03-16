@@ -3,9 +3,15 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
+import type { Effect } from './effect'
 import { Resources } from './resource'
 import type { IntlString, Params, ResourceId, Status, StatusFactory } from './types'
 import { Result } from './types'
+
+export type IntlStringFactory<M extends Params> = {
+  id: ResourceId<IntlStringFactory<M>>
+  create: (params: M) => Effect<IntlString<M>>
+}
 
 export const $status =
   <M extends Params = void, P extends M = M>(result: Result, message?: IntlString<M>) =>
@@ -15,7 +21,7 @@ export const $status =
     cast: (status: Status<any, any>): Status<M, P> => {
       const statusId = status.id as string
       if (statusId !== id) {
-        const errorStatus = platform.status.CantCastStatus.create({ id: statusId }) // TODO: CastExceptino
+        const errorStatus = platform.status.CastException.create({ id: statusId })
         throw new PlatformError(errorStatus)
       }
       return status
@@ -25,7 +31,7 @@ export const $status =
 export const platform = Resources.plugin('platform', (_) => ({
   status: {
     UnknownError: _($status<{ message: string }>(Result.ERROR)),
-    CantCastStatus: _($status<{ id: string }>(Result.ERROR)),
+    CastException: _($status<{ id: string }>(Result.ERROR)),
   },
 }))
 

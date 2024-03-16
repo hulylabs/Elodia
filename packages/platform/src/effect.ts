@@ -6,7 +6,7 @@
 import { getStatus, PlatformError } from './platform'
 import { Result, type Params, type Status } from './types'
 
-export interface Effect<V, M extends Params, P extends M> {
+export interface Effect<V, M extends Params = never, P extends M = never> {
   then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void
 }
 
