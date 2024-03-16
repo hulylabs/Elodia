@@ -26,8 +26,8 @@ const model = dsl.model('core', {
   }),
 })
 
-console.dir(core)
-console.dir(model)
+// console.dir(core)
+// console.dir(model)
 
 test('core model', () => {
   expect(model.name).toBe('core')

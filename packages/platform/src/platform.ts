@@ -8,9 +8,14 @@ import { Resources } from './resource'
 import type { IntlString, Params, ResourceId, Status, StatusFactory } from './types'
 import { Result } from './types'
 
+type TranslationError = {
+  id: string
+  locale: string
+}
+
 export type IntlStringFactory<M extends Params> = {
   id: ResourceId<IntlStringFactory<M>>
-  create: (params: M) => Effect<IntlString<M>>
+  translate: (params: M) => Effect<string, TranslationError>
 }
 
 export const $status =
