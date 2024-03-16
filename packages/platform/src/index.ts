@@ -5,19 +5,18 @@
  * Huly Platform Package.
  */
 
-import { Console } from './console'
+// import { Console } from './console'
 import { Platform } from './platform'
-import { newStatus, Result } from './types'
 
 export const platform = Platform.plugin('platform', {
   status: {
-    OK: Platform.success(() => newStatus(Result.OK)),
+    // OK: Platform.success(() => newStatus(Result.OK)),
   },
   const: {
     N42: Platform.success(42),
   },
   service: {
-    Console: Platform.success(Console),
+    // Console: Platform.success(Console),
   },
 })
 
@@ -29,7 +28,9 @@ const prog = Platform.syncCode(function* (_) {
   return 55
 })
 
-prog.then(console.log)
-platform.const.N42.then(console.log)
+// prog.then(console.log)
+// platform.const.N42
 
 console.log(prog)
+
+console.log(Platform.runSync(prog))

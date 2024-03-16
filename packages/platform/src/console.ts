@@ -4,7 +4,6 @@
 //
 
 import { Platform } from './platform'
-import type { Effect } from './types'
 
 interface Console {
   // debug(message: string): void
