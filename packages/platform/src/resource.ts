@@ -5,9 +5,14 @@
 
 export type Resource<T> = string & { __resource: T }
 
+interface ResourceId<T> {
+  __id: true
+  value: T
+}
+
 type CategoryValues = { [key: string]: unknown }
 type CategoryResources<V extends CategoryValues> = {
-  [K in keyof V]: Resource<V[K]>
+  [K in keyof V]: V[K] extends ResourceId<infer T> ? Resource<T> : V[K]
 }
 
 type PluginValues = Record<string, CategoryValues>
@@ -29,13 +34,35 @@ function mapObject<T, U>(
 
 const allResources = new Map<string, unknown>()
 
-function addResource<T>(id: string, value: T): Resource<T> {
-  allResources.set(id, value)
-  return id as Resource<T>
+function addResource<T>(id: string, value: unknown): unknown {
+  const ident = value as ResourceId<T>
+  if (ident.__id) {
+    const resolve = ident.value
+    if (resolve) {
+      allResources.set(id, value)
+    }
+    return id as Resource<T>
+  } else {
+    return value
+  }
 }
 
-export function plugin<R extends PluginValues>(name: string, values: R): PluginResources<R> {
-  return mapObject(values, name, (name, category) =>
+interface Identifiers {
+  external<T>(): ResourceId<T>
+  internal<T>(value: T): ResourceId<T>
+}
+
+const external = {
+  __id: true,
+} as ResourceId<void>
+
+const ident: Identifiers = {
+  external: <T,>(): ResourceId<T> => external as ResourceId<T>,
+  internal: <T,>(value: T): ResourceId<T> => ({ __id: true, value }),
+}
+
+export function plugin<R extends PluginValues>(name: string, init: (ident: Identifiers) => R): PluginResources<R> {
+  return mapObject(init(ident), name, (name, category) =>
     mapObject(category, name, (id, value) => addResource(id, value)),
   ) as PluginResources<R>
 }

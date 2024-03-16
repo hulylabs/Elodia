@@ -3,26 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import type { IntlString, Params } from './types'
-
-// S T A T U S
-
-export enum Result {
-  OK,
-  ERROR,
-}
-
-export interface Status<P extends Params = {}> {
-  readonly result: Result
-  readonly message?: {
-    readonly i18n: IntlString<P>
-    readonly params: P
-  }
-}
-
-export function newStatus(result: Result): Status<{}> {
-  return { result } as Status<{}>
-}
+import type { Status } from './types'
 
 // E F F E C T S
 
