@@ -12,3 +12,11 @@ test('Effects.succes', () => {
     expect(value).toEqual(42)
   })
 })
+
+test('Effects.syncCode', () => {
+  Effects.syncCode(function* (_) {
+    return 'hello'
+  }).then((value) => {
+    expect(value).toEqual('hello')
+  })
+})
