@@ -3,7 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-// import { expect, test } from 'bun:test'
+import { expect, test } from 'bun:test'
 
 import { core } from '../src/core'
 import { dsl } from '../src/dsl'
@@ -28,3 +28,7 @@ const model = dsl.model('core', {
 
 console.dir(core)
 console.dir(model)
+
+test('core model', () => {
+  expect(model.name).toBe('core')
+})
