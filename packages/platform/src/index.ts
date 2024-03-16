@@ -6,7 +6,8 @@
  */
 
 import { Console } from './console'
-import { Platform } from './platform'
+import { Platform, type Code } from './platform'
+import { type Effect } from './types'
 
 export const platform = Platform.plugin('platform', {
   const: {
@@ -17,11 +18,17 @@ export const platform = Platform.plugin('platform', {
   },
 })
 
-const code = Platform.runProgram(function* () {
-  const value = yield Platform.success(42)
+const prog = Platform.syncCode(function* (
+  _: (effect: Effect<number>) => Code<number>,
+) {
+  const value = yield* _(Platform.success(42))
+  console.log('inside program', value)
   // const console = yield platform.service.Console
-  console.info('inside program', value)
+  // console.info('inside program', value)
   return 55
 })
 
-console.log('code', Platform.run(code))
+prog.then(console.log)
+platform.const.N42.then(console.log)
+
+console.log(prog)

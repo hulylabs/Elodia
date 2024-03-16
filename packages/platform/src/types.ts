@@ -31,15 +31,15 @@ export type ResourceId = string & { __tag: 'resource' }
 
 // E F F E C T
 
-export interface Value<V = any, S extends Status = Status> {
+// export interface Context {}
+
+export interface Effect<V = any, S extends Status = Status> {
   then(success: (value: V) => void, failure?: (status: S) => void): void
 }
 
-export interface Context {}
-
-export type Effect<V = any, S extends Status = Status> = (
-  ctx: Context,
-) => Value<V, S>
+// export type Effect<V = any, S extends Status = Status> = (
+//   ctx: Context,
+// ) => Value<V, S>
 
 // P L A T F O R M
 
