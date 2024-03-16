@@ -2,7 +2,7 @@
  * © 2024 Hardcore Engineering, Inc. All Rights Reserved.
  * Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
  *
- * Huly Platform Package.
+ * Huly Platform Effects & Resources
  */
 
 import { Console } from './console'
@@ -13,13 +13,13 @@ interface XYZ {
   tx: string
 }
 
-export const platform = Resources.plugin('platform', (ident) => ({
+export const platform = Resources.plugin('platform', (_) => ({
   class: {
-    Object: ident.external<XYZ>(),
-    Class: ident.internal('trx'),
+    Object: _.id<XYZ>(),
+    Class: _.id('trx'),
   },
   status: {
-    OK: ident.factory((id) => id + 'OK'),
+    OK: _.factory((id) => id + 'OK'),
   },
   const: {
     N55: 5,

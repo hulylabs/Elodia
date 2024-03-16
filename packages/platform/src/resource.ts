@@ -21,23 +21,23 @@
 
 export type ResourceId<T> = string & { __resource: T }
 
-interface ValuePolicy {
-  keepId: boolean
+interface ValueSubstitutionPolicy {
+  replaceWithId: boolean
 }
 
-interface KeepResourceId<T> extends ValuePolicy {
-  keepId: true
-  cacheValue?: T
+interface ReplaceWithResourceId<T> extends ValueSubstitutionPolicy {
+  replaceWithId: true
+  keepValue?: T
 }
 
-interface CreateValueUsingId<T, V> extends ValuePolicy {
-  keepId: false
+interface CreateValueUsingId<T, V> extends ValueSubstitutionPolicy {
+  replaceWithId: false
   factory: (id: ResourceId<T>) => V
 }
 
 type CategoryValues = { [key: string]: unknown }
 type CategoryResources<V extends CategoryValues> = {
-  [K in keyof V]: V[K] extends KeepResourceId<infer T>
+  [K in keyof V]: V[K] extends ReplaceWithResourceId<infer T>
     ? ResourceId<T>
     : V[K] extends CreateValueUsingId<any, infer V>
       ? V
@@ -61,18 +61,18 @@ function mapObject<T, U>(
   return result
 }
 
-const allResources = new Map<string, unknown>()
+const resourceIdToValue = new Map<string, unknown>()
 
-function isValuePolicy(value: unknown): value is ValuePolicy {
-  return typeof value === 'object' && value !== null && 'keepId' in value
+function isValueSubstitutionPolicy(value: unknown): value is ValueSubstitutionPolicy {
+  return typeof value === 'object' && value !== null && 'replaceWithId' in value
 }
 
 function applyPolicy(id: string, value: unknown): unknown {
-  if (isValuePolicy(value)) {
-    if (value.keepId) {
-      const keepResourceId = value as KeepResourceId<any>
-      if (keepResourceId.cacheValue) {
-        allResources.set(id, keepResourceId.cacheValue)
+  if (isValueSubstitutionPolicy(value)) {
+    if (value.replaceWithId) {
+      const keepResourceId = value as ReplaceWithResourceId<any>
+      if (keepResourceId.keepValue) {
+        resourceIdToValue.set(id, keepResourceId.keepValue)
       }
       return id as ResourceId<any>
     } else {
@@ -85,19 +85,13 @@ function applyPolicy(id: string, value: unknown): unknown {
 }
 
 interface Policy {
-  external<T>(): KeepResourceId<T>
-  internal<T>(value: T): KeepResourceId<T>
+  id<T>(cacheValue?: T): ReplaceWithResourceId<T>
   factory<T, V>(value: (id: ResourceId<T>) => V): CreateValueUsingId<T, V>
 }
 
-const external: KeepResourceId<any> = {
-  keepId: true,
-}
-
 const ident: Policy = {
-  external: <T,>(): KeepResourceId<T> => external,
-  internal: <T,>(cacheValue: T): KeepResourceId<T> => ({ keepId: true, cacheValue }),
-  factory: <T, V>(factory: (id: ResourceId<T>) => V): CreateValueUsingId<T, V> => ({ keepId: false, factory }),
+  id: <T,>(keepValue?: T): ReplaceWithResourceId<T> => ({ replaceWithId: true, keepValue }),
+  factory: <T, V>(factory: (id: ResourceId<T>) => V): CreateValueUsingId<T, V> => ({ replaceWithId: false, factory }),
 }
 
 function plugin<R extends PluginValues>(name: string, init: (policy: Policy) => R): PluginResources<R> {
