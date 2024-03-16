@@ -6,9 +6,7 @@
 import type { IntlString, Params, ResourceId, Status } from './types'
 import { Result } from './types'
 
-const createStatusFactoryFactory =
+export const $status =
   <P extends Params>(result: Result, message?: IntlString<P>) =>
   (id: ResourceId<(params: P) => Status<P>>) =>
   (params: P) => ({ id, params, result, message })
-
-export { createStatusFactoryFactory as $status }
