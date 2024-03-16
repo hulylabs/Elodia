@@ -12,7 +12,7 @@ import { Result } from '../src/types'
 
 const plugin = Resources.plugin('plugin', (_) => ({
   status: {
-    Error: _.factory($status<{ text: string }>(Result.ERROR)),
+    Error: _($status<{ text: string }>(Result.ERROR)),
   },
 }))
 

@@ -5,32 +5,18 @@
 
 import type { ResourceId } from './types'
 
-interface ValueSubstitutionPolicy {
-  replaceWithId: boolean
+interface Factory<V> {
+  __factory: (id: ResourceId<V>) => V
 }
 
-interface ReplaceWithResourceId<T> extends ValueSubstitutionPolicy {
-  replaceWithId: true
-  keepValue?: T
+type CategoryResources = { [key: string]: unknown }
+type CategoryResourcesAfterFactories<V extends CategoryResources> = {
+  [K in keyof V]: V[K] extends Factory<infer T> ? T : V[K]
 }
 
-interface CreateValueUsingId<T, V> extends ValueSubstitutionPolicy {
-  replaceWithId: false
-  factory: (id: ResourceId<T>) => V
-}
-
-type CategoryValues = { [key: string]: unknown }
-type CategoryResources<V extends CategoryValues> = {
-  [K in keyof V]: V[K] extends ReplaceWithResourceId<infer T>
-    ? ResourceId<T>
-    : V[K] extends CreateValueUsingId<any, infer V>
-      ? V
-      : V[K]
-}
-
-type PluginValues = Record<string, CategoryValues>
-type PluginResources<R extends PluginValues> = {
-  [K in keyof R]: CategoryResources<R[K]>
+type PluginResources = Record<string, CategoryResources>
+type PluginResourcesAfterFactories<R extends PluginResources> = {
+  [K in keyof R]: CategoryResourcesAfterFactories<R[K]>
 }
 
 function mapObject<T, U>(
@@ -45,45 +31,30 @@ function mapObject<T, U>(
   return Object.freeze(result)
 }
 
-const resourceIdToValue = new Map<string, unknown>()
-
-function isValueSubstitutionPolicy(value: unknown): value is ValueSubstitutionPolicy {
-  return typeof value === 'object' && value !== null && 'replaceWithId' in value
+function isFactory(value: unknown): value is Factory<unknown> {
+  return typeof value === 'object' && value !== null && '__factory' in value
 }
 
-function applyPolicy(id: string, value: unknown): unknown {
-  if (isValueSubstitutionPolicy(value)) {
-    if (value.replaceWithId) {
-      const keepResourceId = value as ReplaceWithResourceId<any>
-      if (keepResourceId.keepValue) {
-        resourceIdToValue.set(id, keepResourceId.keepValue)
-      }
-      return id as ResourceId<any>
-    } else {
-      const createValueUsingId = value as CreateValueUsingId<any, any>
-      const result = createValueUsingId.factory(id as ResourceId<any>)
-      return result
-    }
-  }
-  return value
+const callFactory = (id: string, value: unknown): unknown =>
+  isFactory(value) ? value.__factory(id as ResourceId<any>) : value
+
+interface FactoryProvider {
+  <V>(factory: (id: ResourceId<V>) => V): Factory<V>
+  <X>(): Factory<ResourceId<X>>
 }
 
-interface Policy {
-  id<T>(cacheValue?: T): ReplaceWithResourceId<T>
-  factory<T, V>(value: (id: ResourceId<T>) => V): CreateValueUsingId<T, V> // TODO: T == V?
-}
-
-const ident: Policy = {
-  id: <T,>(keepValue?: T): ReplaceWithResourceId<T> => ({ replaceWithId: true, keepValue }),
-  factory: <T, V>(factory: (id: ResourceId<T>) => V): CreateValueUsingId<T, V> => ({ replaceWithId: false, factory }),
-}
-
-function plugin<R extends PluginValues>(name: string, init: (policy: Policy) => R): PluginResources<R> {
-  return mapObject(init(ident), name, (name, category) =>
-    mapObject(category, name, (id, value) => applyPolicy(id, value)),
-  ) as PluginResources<R>
-}
-
-export const Resources = Object.freeze({
-  plugin,
+const factoryProvider = <V,>(factory?: (id: ResourceId<V>) => V) => ({
+  __factory: factory || ((id: ResourceId<V>) => id),
 })
+
+const plugin = <R extends PluginResources>(
+  name: string,
+  init: (_: FactoryProvider) => R,
+): PluginResourcesAfterFactories<R> =>
+  mapObject(init(factoryProvider), name, (name, category) =>
+    mapObject(category, name, (id, value) => callFactory(id, value)),
+  ) as PluginResourcesAfterFactories<R>
+
+export const Resources = {
+  plugin,
+}

@@ -12,12 +12,12 @@ import { Result } from '../src/types'
 test('Resources.plugin', () => {
   const plugin = Resources.plugin('plugin', (_) => ({
     class: {
-      Object: _.id<{ x: string }>(),
-      Class: _.id('Class'),
+      Object: _<{ x: string }>(),
+      Class: _<string>(),
     },
     status: {
-      OK: _.factory((id) => id + '-OK'),
-      ERROR: _.factory($status<{ text: string }>(Result.ERROR)),
+      OK: _((id) => id + '-OK'),
+      ERROR: _($status<{ text: string }>(Result.ERROR)),
     },
     const: {
       N5: 5,

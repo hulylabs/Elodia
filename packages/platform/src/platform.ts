@@ -15,7 +15,7 @@ export const $status =
     cast: (status: Status<any, any>): Status<M, P> => {
       const statusId = status.id as string
       if (statusId !== id) {
-        const errorStatus = platform.status.CantCastStatus.create({ id: statusId })
+        const errorStatus = platform.status.CantCastStatus.create({ id: statusId }) // TODO: CastExceptino
         throw new PlatformError(errorStatus)
       }
       return status
@@ -24,8 +24,8 @@ export const $status =
 
 export const platform = Resources.plugin('platform', (_) => ({
   status: {
-    UnknownError: _.factory($status<{ message: string }>(Result.ERROR)),
-    CantCastStatus: _.factory($status<{ id: string }>(Result.ERROR)),
+    UnknownError: _($status<{ message: string }>(Result.ERROR)),
+    CantCastStatus: _($status<{ id: string }>(Result.ERROR)),
   },
 }))
 
