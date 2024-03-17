@@ -3,10 +3,18 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-// import data from './x.json'
+import { expect, test } from 'bun:test'
 
-// console.log(data)
+import { Console } from '../src/console'
+import { IO } from '../src/io'
+import { Platform, platform } from '../src/platform'
 
-// import('./x.json').then((data) => {
-//   console.log(data)
-// })
+test('console', () => {
+  const io = IO.syncIO((x) => x)
+  Console.log(io)
+  io.success('x')
+})
+
+test('i18n', () => {
+  const x = Platform.translate(platform.string.CopyrightMessage, { year: '2024' })
+})

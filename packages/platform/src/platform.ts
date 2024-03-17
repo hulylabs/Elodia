@@ -18,7 +18,7 @@ export type IntlStringFactory<M extends Params> = {
 }
 
 export const $status =
-  <M extends Params = void, P extends M = M>(result: Result, message?: IntlString<M>) =>
+  <M extends Params = undefined, P extends M = M>(result: Result, message?: IntlString<M>) =>
   (id: ResourceId<StatusFactory<M, P>>) => ({
     id,
     create: (params: P) => ({ id, params, result, message }),
@@ -38,6 +38,11 @@ export const platform = Resources.plugin('platform', (_) => ({
   status: {
     UnknownError: _($status<{ message: string }>(Result.ERROR)),
     CastException: _($status<{ id: string }>(Result.ERROR)),
+  },
+  string: {
+    CopyrightMessage: _<{ year: string }>(),
+    License: _(),
+    Author_1: _(),
   },
 }))
 
@@ -78,7 +83,7 @@ const getLocale = (pluginId: PluginId, locale: string): Out<Record<string, strin
 
 const messageFormat = <P extends Params>(
   locale: string,
-  messageId: IntlString,
+  messageId: IntlString<P>,
   params: P,
 ): IO<Record<string, string>, string> =>
   IO.syncIO((locales: Record<string, string>) => {
@@ -88,7 +93,7 @@ const messageFormat = <P extends Params>(
     return messageFormatter.format(params as any)
   })
 
-const translate = <P extends Params>(messageId: IntlString, params: P): Out<string> => {
+const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<string> => {
   const locale = getCurrentLocale()
   const format = messageFormat(locale, messageId, params)
   const cachedLocale = cachedLocales.get(locale)
