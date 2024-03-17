@@ -6,11 +6,10 @@
 import { expect, test } from 'bun:test'
 
 import { Console } from '../src/console'
-import { IO } from '../src/io'
 import { Platform, platform } from '../src/platform'
 
 test('console', () => {
-  const io = IO.syncIO((x) => x)
+  const io = Platform.IO.syncIO((x) => x)
   Console.log(io)
   io.success('x')
 })

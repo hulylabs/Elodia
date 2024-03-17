@@ -38,7 +38,7 @@ export type StatusFactory<M extends Params, P extends M = M> = {
   cast: (status: Status<any, any>) => Status<M, P>
 }
 
-export interface Status<M extends Params = void, P extends M = M> {
+export interface Status<M extends Params = undefined, P extends M = M> {
   readonly id: ResourceId<StatusFactory<M, P>>
   readonly result: Result
   readonly params: P

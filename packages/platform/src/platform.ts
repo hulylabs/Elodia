@@ -33,8 +33,15 @@ export const $status =
   })
 
 const platformIO = createIO({
-  errorToStatus,
-  defaultFailureHandler,
+  errorToStatus: (error: unknown): Status => {
+    if (error instanceof PlatformError) return error.status
+    if (error instanceof Error) return platform.status.UnknownError.create({ message: error.message })
+    throw error // not our business
+  },
+
+  defaultFailureHandler: (status: Status): void => {
+    console.error(status)
+  },
 })
 
 const strings: any = { en }
@@ -76,7 +83,7 @@ const setCachedLocale = (pluginId: PluginId, locale: string, strings: Record<str
 const getLocale = (pluginId: PluginId, locale: string): Out<Record<string, string>> => {
   const cachedLocale = getCachedLocale(pluginId, locale)
   if (cachedLocale) {
-    IO.syncIO(() => cachedLocale) // TODO: success
+    platformIO.syncIO(() => cachedLocale) // TODO: success
   }
   const plugin = Resources.getPlugin(pluginId)
   const localizedStrings = plugin.$.getLocalizedStrings(locale)
@@ -103,16 +110,6 @@ const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<s
   const format = messageFormat(locale, messageId, params)
   const cachedLocale = cachedLocales.get(locale)
   return cachedLocale ? format : getLocale(Resources.destructureId(messageId).pluginId, locale).pipe(format)
-}
-
-function errorToStatus(error: unknown): Status {
-  if (error instanceof PlatformError) return error.status
-  if (error instanceof Error) return platform.status.UnknownError.create({ message: error.message })
-  throw error // not our business
-}
-
-function defaultFailureHandler(status: Status): void {
-  console.error(status)
 }
 
 export class PlatformError<M extends Params, P extends M> extends Error {

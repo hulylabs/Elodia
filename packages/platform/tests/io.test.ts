@@ -6,7 +6,9 @@
 import { expect, test } from 'bun:test'
 
 import { Console } from '../src/console'
-import { IO } from '../src/io'
+import { Platform } from '../src/platform'
+
+const { IO } = Platform
 
 test('message sent after', () => {
   const io = IO.syncIO((x) => x)
