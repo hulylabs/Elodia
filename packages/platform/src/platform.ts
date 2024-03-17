@@ -41,7 +41,7 @@ export const platform = Resources.plugin('platform', (_) => ({
   },
 }))
 
-platform.$.setLocaizedStringLoader(
+platform.$.setLocalizedStringLoader(
   (locale: string): Out<Record<string, string>> =>
     IO.syncIO(() => {
       const localized = strings[locale] as Record<string, string>
