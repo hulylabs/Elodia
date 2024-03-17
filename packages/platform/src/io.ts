@@ -17,66 +17,87 @@ export interface Out<O> {
 
 export interface IO<I, O> extends Sink<I>, Out<O> {}
 
-export function syncIO<I, O>(op: (value: I) => O): IO<I, O> {
-  let out: Sink<O> | Sink<O>[]
+abstract class IOBase<I, O> implements IO<I, O> {
+  private out?: Sink<O> | Sink<O>[]
 
-  const success = (input: I) => {
-    const result = op(input)
-    if (out)
-      if (Array.isArray(out)) for (const sink of out) sink.success(result)
-      else out.success(result)
+  protected notifySuccess(result: O) {
+    if (this.out)
+      if (Array.isArray(this.out)) for (const sink of this.out) sink.success(result)
+      else this.out.success(result)
   }
-  const failure = () => {}
-  const to = <X extends Sink<O>>(sink: X): X => {
-    if (out)
-      if (Array.isArray(out)) out.push(sink)
-      else out = [out, sink]
-    else out = sink
+
+  to<X extends Sink<O>>(sink: X): X {
+    if (this.out)
+      if (Array.isArray(this.out)) this.out.push(sink)
+      else this.out = [this.out, sink]
+    else this.out = sink
     return sink
   }
 
-  return {
-    success,
-    failure,
-    to,
+  abstract success(input: I): void
+  failure(): void {}
+}
+
+class SyncIO<I, O> extends IOBase<I, O> {
+  constructor(private readonly op: (value: I) => O) {
+    super()
+  }
+  success(input: I) {
+    this.notifySuccess(this.op(input))
   }
 }
 
-export function syncCode<I, O>(code: (x: I) => Generator<IO<any, any>>): IO<I, O> {
-  const io = {
-    success: (input: I) => {
-      const i = code(input)
-      function loop(value?: any) {
-        const next = i.next(value)
-        if (!next.done) {
-          const io = next.value
-          io.to({ success: (value: any) => loop(value), failure: () => {} })
-          io.success(value)
-        }
-      }
-      loop()
-    },
-    failure: () => {
-      throw new Error('failure')
-    },
-    to: (_: Sink<O>) => {
-      throw new Error('not implemented')
-    },
+class SyncCode<I, O> extends IOBase<I, O> {
+  constructor(private readonly code: (x: I) => Generator<IO<any, any>, O>) {
+    super()
   }
-  return io
+  success(input: I) {
+    const i = this.code(input)
+    function loop(value?: any) {
+      const next = i.next(value)
+      if (!next.done) {
+        const io = next.value
+        io.to({ success: (value: any) => loop(value), failure: () => {} })
+        io.success(value)
+      }
+    }
+    loop()
+  }
 }
+
+class AsyncIO<I, O> extends IOBase<I, O> {
+  constructor(private readonly op: (value: I) => Promise<O>) {
+    super()
+  }
+  success(input: I) {
+    this.op(input).then(this.notifySuccess)
+  }
+}
+
+class AsyncCode<I, O> extends IOBase<I, O> {
+  constructor(private readonly code: (x: I) => AsyncGenerator<IO<any, any>, O>) {
+    super()
+  }
+  success(input: I) {
+    const i = this.code(input)
+    function loop(value?: any) {
+      const next = i.next(value)
+      next.then(({ done, value }) => {
+        if (!done) {
+          value.to({ success: (value: any) => loop(value), failure: () => {} })
+          value.success(value)
+        }
+      })
+    }
+    loop()
+  }
+}
+
+export const syncIO = <I, O>(op: (value: I) => O): IO<I, O> => new SyncIO(op)
+export const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
+export const syncCode = <I, O>(code: (x: I) => Generator<IO<any, any>>): IO<I, O> => new SyncCode(code)
+export const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
 
 // export const success = <I,>(value: I): Out<I> => syncIO(() => value)
 
 export const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.to(syncIO(op))
-
-// export function gen(gen: () => Generator<IO>) {
-//   const i = gen()
-//   const next = (input: any) => {
-//     const { value, done } = i.next(input)
-//     console.log('got:', value, 'done:', done)
-//     if (done) return value
-//     return value.to({ success: next, failure: () => {} })
-//   }
-//   return next
-// }
