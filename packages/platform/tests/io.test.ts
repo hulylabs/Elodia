@@ -6,24 +6,52 @@
 import { expect, test } from 'bun:test'
 
 import { Console } from '../src/console'
-import { syncCode, syncIO } from '../src/io'
+import { asyncCode, asyncIO, syncCode, syncIO } from '../src/io'
 
-// test('io', () => {
-//   const io = syncIO(() => 'The answer is 42')
-//   Console.log(io)
-//   io.success(55)
-// })
-
-test('code', () => {
-  console.log('code')
+test('sync code', () => {
   const x = syncCode(function* () {
     yield syncIO((x) => x + 1)
     yield syncIO((x) => x + 1)
     const x = yield syncIO((x) => x + 1)
     console.log('x', x)
     yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 'sync')
     yield syncIO((x) => x + 1)
   })
   x.to({ success: (x) => console.log('success', x), failure: () => {} })
   x.success(100)
+})
+
+test('async io', () => {
+  const io = asyncIO(async (x: number) => x + 1)
+  io.to({ success: (x) => console.log('success', x), failure: () => {} })
+  io.success(100)
+})
+
+test('mixed code in sync gen', () => {
+  const x = syncCode(function* () {
+    yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 1)
+    const x = yield syncIO((x) => x + 1)
+    console.log('x', x)
+    yield syncIO((x) => x + 1)
+    yield asyncIO(async (x) => x + 'async')
+    yield syncIO((x) => x + 1)
+  })
+  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.success(100)
+})
+
+test('mixed code in async gen', () => {
+  const x = asyncCode(async function* () {
+    yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 1)
+    const x = yield syncIO((x) => x + 1)
+    console.log('x', x)
+    yield syncIO((x) => x + 1)
+    yield asyncIO(async (x) => x + 'async')
+    yield syncIO((x) => x + 1)
+  })
+  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.success(1000)
 })

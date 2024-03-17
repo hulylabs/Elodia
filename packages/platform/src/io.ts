@@ -57,9 +57,7 @@ class SyncCode<I, O> extends IOBase<I, O> {
       success: (value: any) => {
         const next = i.next(value)
         if (!next.done) this.loop(next.value, i, value)
-        else {
-          this.notifySuccess(value)
-        }
+        else this.notifySuccess(value)
       },
       failure: () => {},
     })
@@ -78,7 +76,7 @@ class AsyncIO<I, O> extends IOBase<I, O> {
     super()
   }
   success(input: I) {
-    this.op(input).then(this.notifySuccess)
+    this.op(input).then(this.notifySuccess.bind(this))
   }
 }
 
@@ -86,18 +84,29 @@ class AsyncCode<I, O> extends IOBase<I, O> {
   constructor(private readonly code: (x: I) => AsyncGenerator<IO<any, any>, O>) {
     super()
   }
+  protected loop(io: IO<any, any>, i: AsyncGenerator<IO<any, any>>, input: any) {
+    io.to({
+      success: (value: any) => {
+        const loop = this.loop.bind(this)
+        const notifySuccess = this.notifySuccess.bind(this)
+        const next = i.next(value)
+        next.then((next) => {
+          if (!next.done) loop(next.value, i, value)
+          else notifySuccess(value)
+        })
+      },
+      failure: () => {},
+    })
+    io.success(input)
+  }
+
   success(input: I) {
     const i = this.code(input)
-    function loop(value?: any) {
-      const next = i.next(value)
-      next.then(({ done, value }) => {
-        if (!done) {
-          value.to({ success: (value: any) => loop(value), failure: () => {} })
-          value.success(value)
-        }
-      })
-    }
-    loop()
+    const loop = this.loop.bind(this)
+    const next = i.next()
+    next.then((next) => {
+      if (!next.done) loop(next.value, i, input)
+    })
   }
 }
 
