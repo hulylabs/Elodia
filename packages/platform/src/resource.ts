@@ -3,9 +3,22 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
+import { type Out } from './io'
 import type { ResourceId } from './types'
 
-type PluginId = string & { __tag: 'plugin' }
+export type PluginId = string & { __tag: 'plugin' }
+
+type LocalizedStringLoader = (locale: string) => Out<Record<string, string>>
+
+interface PluginDescriptor {
+  id: PluginId
+  setLocalizedStringLoader: (loader: LocalizedStringLoader) => void
+  getLocalizedStrings: (locale: string) => Out<Record<string, string>>
+}
+
+interface Plugin {
+  $: PluginDescriptor
+}
 
 interface Factory<V> {
   __factory: (id: ResourceId<V>) => V
@@ -33,6 +46,15 @@ function mapObject<T, U>(
   return result
 }
 
+const destructureId = (id: ResourceId<any>) => {
+  const parts = id.split(':')
+  return {
+    pluginId: parts[0] as PluginId,
+    category: parts[1],
+    key: parts[2],
+  }
+}
+
 function isFactory(value: unknown): value is Factory<unknown> {
   return typeof value === 'object' && value !== null && '__factory' in value
 }
@@ -49,13 +71,45 @@ const factoryProvider = <V,>(factory?: (id: ResourceId<V>) => V) => ({
   __factory: factory || ((id: ResourceId<V>) => id),
 })
 
-const plugin = <R extends PluginResources>(name: string, init: (_: FactoryProvider) => R) => ({
-  id: name as PluginId,
-  ...(mapObject(init(factoryProvider), name, (name, category) =>
+const stringLoaders: Map<PluginId, LocalizedStringLoader> = new Map()
+const plugins: Map<PluginId, Plugin> = new Map()
+
+function plugin<R extends PluginResources>(name: string, init: (_: FactoryProvider) => R) {
+  const id = name as PluginId
+
+  const resources = mapObject(init(factoryProvider), name, (name, category) =>
     mapObject(category, name, (id, value) => callFactory(id, value)),
-  ) as PluginResourcesAfterFactories<R>),
-})
+  ) as PluginResourcesAfterFactories<R>
+
+  const descriptor: PluginDescriptor = {
+    id,
+    setLocalizedStringLoader: (loader: LocalizedStringLoader) => {
+      stringLoaders.set(id, loader)
+    },
+    getLocalizedStrings: (locale: string): Out<Record<string, string>> => {
+      const loader = stringLoaders.get(id)
+      if (!loader) {
+        throw new Error(`No localized string loader for plugin: ${id}`)
+      }
+      return loader(locale)
+    },
+  }
+
+  const plugin = { $: descriptor, ...resources }
+  plugins.set(id, plugin)
+  return plugin
+}
+
+const getPlugin = (id: PluginId): Plugin => {
+  const plugin = plugins.get(id)
+  if (!plugin) {
+    throw new Error(`No plugin with id: ${id}`)
+  }
+  return plugin
+}
 
 export const Resources = {
+  destructureId,
   plugin,
+  getPlugin,
 }
