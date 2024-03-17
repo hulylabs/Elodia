@@ -5,7 +5,14 @@
 
 import { expect, test } from 'bun:test'
 
+import { Console } from '../src/console'
 import { IO } from '../src/io'
+
+test('message sent after', () => {
+  const io = IO.syncIO((x) => x)
+  io.success('hello world, console')
+  Console.log(io)
+})
 
 test('sync code', () => {
   const x = IO.syncCode(function* () {
@@ -17,13 +24,13 @@ test('sync code', () => {
     yield IO.syncIO((x) => x + 'sync')
     yield IO.syncIO((x) => x + 1)
   })
-  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.pipe({ success: (x) => console.log('success', x), failure: () => {} })
   x.success(100)
 })
 
 test('async io', () => {
   const io = IO.asyncIO(async (x: number) => x + 1)
-  io.to({ success: (x) => console.log('success', x), failure: () => {} })
+  io.pipe({ success: (x) => console.log('success', x), failure: () => {} })
   io.success(100)
 })
 
@@ -37,7 +44,7 @@ test('mixed code in sync gen', () => {
     yield IO.asyncIO(async (x) => x + 'async')
     yield IO.syncIO((x) => x + 1)
   })
-  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.pipe({ success: (x) => console.log('success', x), failure: () => {} })
   x.success(100)
 })
 
@@ -51,7 +58,7 @@ test('mixed code in async gen', () => {
     yield IO.asyncIO(async (x) => x + 'async')
     yield IO.syncIO((x) => x + 1)
   })
-  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.pipe({ success: (x) => console.log('success', x), failure: () => {} })
   x.success(1000)
 })
 
@@ -67,6 +74,6 @@ test('yeld* test', () => {
     console.log('s', s)
   })
 
-  root.to({ success: (x) => console.log('success', x), failure: () => {} })
+  root.pipe({ success: (x) => console.log('success', x), failure: () => {} })
   root.success(500)
 })

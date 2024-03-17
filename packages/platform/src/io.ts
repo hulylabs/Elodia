@@ -12,7 +12,7 @@ interface Sink<T> {
 }
 
 export interface Out<O> {
-  to: <X extends Sink<O>>(input: X) => X
+  pipe: <X extends Sink<O>>(input: X) => X
 }
 
 export interface IO<I, O> extends Sink<I>, Out<O> {}
@@ -25,19 +25,24 @@ interface SyncIterator<I, O> extends IO<I, O> {
 
 abstract class IOBase<I, O> implements IO<I, O> {
   private out?: Sink<O> | Sink<O>[]
+  private processed: boolean = false
+  private result?: O
 
-  protected notifySuccess(result: O) {
+  protected setResult(result: O): void {
+    this.result = result
+    this.processed = true
     if (this.out)
-      if (Array.isArray(this.out)) for (const sink of this.out) sink.success(result)
-      else this.out.success(result)
+      if (Array.isArray(this.out)) for (const sink of this.out) sink.success(this.result!)
+      else this.out.success(this.result!)
   }
 
-  to<X extends Sink<O>>(sink: X): X {
+  pipe<X extends Sink<O>>(sink: X): X {
     if (this.out)
       if (Array.isArray(this.out)) this.out.push(sink)
       else this.out = [this.out, sink]
     else this.out = sink
-    return sink
+    if (this.processed) sink.success(this.result!)
+    return sink // for chaining
   }
 
   abstract success(input: I): void
@@ -49,7 +54,7 @@ class SyncIO<I, O> extends IOBase<I, O> {
     super()
   }
   success(input: I) {
-    this.notifySuccess(this.op(input))
+    this.setResult(this.op(input))
   }
 
   [Symbol.iterator](): Iterator<AnyIO, O> {
@@ -63,11 +68,11 @@ class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<I, O> {
   }
 
   protected loop(io: IO<any, any>, i: Generator<IO<any, any>, any>, input: any) {
-    io.to({
+    io.pipe({
       success: (value: any) => {
         const next = i.next(value)
         if (!next.done) this.loop(next.value, i, value)
-        else this.notifySuccess(value)
+        else this.setResult(value)
       },
       failure: () => {},
     })
@@ -95,7 +100,7 @@ class AsyncIO<I, O> extends IOBase<I, O> {
     super()
   }
   success(input: I) {
-    this.op(input).then(this.notifySuccess.bind(this))
+    this.op(input).then(this.setResult.bind(this))
   }
 }
 
@@ -104,10 +109,10 @@ class AsyncCode<I, O> extends IOBase<I, O> {
     super()
   }
   protected loop(io: IO<any, any>, i: AsyncGenerator<IO<any, any>>, input: any) {
-    io.to({
+    io.pipe({
       success: (value: any) => {
         const loop = this.loop.bind(this)
-        const notifySuccess = this.notifySuccess.bind(this)
+        const notifySuccess = this.setResult.bind(this)
         const next = i.next(value)
         next.then((next) => {
           if (!next.done) loop(next.value, i, value)
@@ -136,7 +141,7 @@ const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O>
 
 // export const success = <I,>(value: I): Out<I> => syncIO(() => value)
 
-const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.to(syncIO(op))
+const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.pipe(syncIO(op))
 
 export const IO = {
   syncIO,

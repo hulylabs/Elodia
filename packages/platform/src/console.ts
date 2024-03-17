@@ -7,7 +7,7 @@ import { IO, type Out } from './io'
 
 export const Console = {
   log: <T,>(value: Out<T>) => {
-    value.to({
+    value.pipe({
       success: (value) => console.log(value),
       failure: () => {},
     })

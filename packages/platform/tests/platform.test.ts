@@ -17,4 +17,5 @@ test('console', () => {
 
 test('i18n', () => {
   const x = Platform.translate(platform.string.CopyrightMessage, { year: '2024' })
+  Console.log(x)
 })

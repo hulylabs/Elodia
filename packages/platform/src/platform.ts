@@ -97,7 +97,7 @@ const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<s
   const locale = getCurrentLocale()
   const format = messageFormat(locale, messageId, params)
   const cachedLocale = cachedLocales.get(locale)
-  return cachedLocale ? format : getLocale(Resources.destructureId(messageId).pluginId, locale).to(format)
+  return cachedLocale ? format : getLocale(Resources.destructureId(messageId).pluginId, locale).pipe(format)
 }
 
 export function getStatus<M extends Params, P extends M>(error: Error) {
