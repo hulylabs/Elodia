@@ -7,6 +7,6 @@
 
 // console.log(data)
 
-import('./x.json').then((data) => {
-  console.log(data)
-})
+// import('./x.json').then((data) => {
+//   console.log(data)
+// })

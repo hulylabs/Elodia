@@ -3,21 +3,16 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-// import { Effects, type Effect } from './effect'
+import { chain, type Out } from './io'
 
-// interface Console {
-//   // debug(message: string): void
+interface ConsoleIO {
+  log<T>(out: Out<T>): Out<T>
+}
 
-//   info(...args: ReadonlyArray<any>): Effect<void>
-
-//   // warn<P extends Params>(message: IntlString<P>, params: P): Value<void>
-//   // terminates the fiber
-//   // error<P extends Params>(status: Status<P>): Value<void, Status<P>>
-// }
-
-// export const Console: Console = {
-//   info: (...args: ReadonlyArray<any>) =>
-//     Effects.sync(() => {
-//       console.log(...args)
-//     }),
-// }
+export const Console: ConsoleIO = {
+  log: <T,>(out: Out<T>): Out<T> =>
+    chain(out, (value: T) => {
+      console.log(value)
+      return value
+    }),
+}

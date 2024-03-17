@@ -10,70 +10,155 @@ export interface Effect<V, M extends Params, P extends M = M> {
   then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void
 }
 
-type Code<V> = Generator<Code<any>, V>
+type Tick = [EffectKind, Code<any>]
+type SyncCode<V> = Generator<Tick, V>
+type AsyncCode<V> = AsyncGenerator<Tick, V>
+type Code<V> = SyncCode<V> | AsyncCode<V>
 
-interface CodeExtractor {
-  <V, M extends Params, P extends M>(effect: Effect<V, M, P>): Code<V>
+interface Launcher {
+  <T, M extends Params, P extends M>(effect: Effect<T, M, P>): Code<T>
 }
 
-type Program<V> = (_: CodeExtractor) => Code<V>
+type SyncProgram<V> = (_: Launcher) => SyncCode<V>
+type AsyncProgram<V> = (_: Launcher) => AsyncCode<V>
+type Program<V> = (_: Launcher) => Code<V>
 
-function execute<R, M extends Params, P extends M>(code: Code<R>): [Result, Status<M, P> | R] {
-  try {
-    const block = code.next()
-    return block.done ? [Result.OK, block.value] : execute(block.value)
-  } catch (error) {
-    if (error instanceof Error) return [Result.ERROR, getStatus(error) as Status<M, P>]
-    throw error // not our business
+enum EffectKind {
+  Sync,
+  ASync,
+}
+
+abstract class EffectImpl<V, M extends Params, P extends M> implements Effect<V, M, P> {
+  abstract readonly code: Code<V>
+
+  abstract getKind(): EffectKind
+  abstract isExecutable(): boolean
+
+  protected static launch<T, M extends Params, P extends M>(effect: Effect<T, M, P>): Code<T> {
+    const impl = effect as EffectImpl<T, M, P>
+    const kind = impl.getKind()
+    switch (kind) {
+      case EffectKind.Sync:
+        if (impl.isExecutable()) return impl.code
+        break
+      case EffectKind.ASync:
+        if (impl.isExecutable()) return impl.code
+        break
+    }
+    throw new PlatformError((effect as SyncFailure<T, M, P>).status)
   }
-}
 
-function syncExtractor<T, M extends Params, P extends M>(effect: Effect<T, M, P> & SyncEffect): Code<T> {
-  if (effect.hasCode) {
-    return (effect as SyncCode<T, M, P>).code
-  } else {
-    const status = (effect as SyncFailure<T, M, P>).status
-    throw new PlatformError(status)
+  protected static async syncExecute<R, M extends Params, P extends M>(
+    code: SyncCode<R>,
+  ): Promise<[Result, Status<M, P> | R]> {
+    try {
+      const block = code.next()
+      if (block.done) return [Result.OK, block.value]
+      const [kind, next] = block.value
+      if (kind === EffectKind.Sync) return EffectImpl.syncExecute(next as SyncCode<any>)
+      return EffectImpl.asyncExecute(next as AsyncCode<any>)
+    } catch (error) {
+      if (error instanceof Error) return [Result.ERROR, getStatus(error) as Status<M, P>]
+      throw error // not our business
+    }
   }
-}
 
-abstract class SyncEffect {
-  readonly hasCode: boolean
-
-  constructor(hasCode: boolean) {
-    this.hasCode = hasCode
+  protected static async asyncExecute<R, M extends Params, P extends M>(
+    code: AsyncCode<R>,
+  ): Promise<[Result, Status<M, P> | R]> {
+    try {
+      const block = await code.next()
+      if (block.done) return [Result.OK, block.value]
+      const [kind, next] = block.value
+      if (kind === EffectKind.Sync) return EffectImpl.syncExecute(next as SyncCode<any>)
+      return EffectImpl.asyncExecute(next as AsyncCode<any>)
+    } catch (error) {
+      if (error instanceof Error) return [Result.ERROR, getStatus(error) as Status<M, P>]
+      throw error // not our business
+    }
   }
+
+  abstract then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void
 }
 
-class SyncCode<V, M extends Params, P extends M> extends SyncEffect implements Effect<V, M, P> {
-  readonly code: Code<V>
+class SyncEffect<V, M extends Params, P extends M> extends EffectImpl<V, M, P> {
+  readonly code: SyncCode<V>
 
-  constructor(program: Program<V>) {
-    super(true)
-    this.code = program(syncExtractor as CodeExtractor)
+  getKind(): EffectKind {
+    return EffectKind.Sync
+  }
+
+  isExecutable(): boolean {
+    return true
+  }
+
+  constructor(program: SyncProgram<V, M, P>) {
+    super()
+    this.code = program(EffectImpl.launch)
   }
 
   public then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void {
-    const [result, value] = execute<V, M, P>(this.code)
-    if (result === Result.OK) {
-      success(value as V)
-    } else {
-      if (failure) {
-        if (value) {
-          failure(value as Status<M, P>)
-        } else {
-          throw new Error('failure callback is required')
+    EffectImpl.syncExecute<V, M, P>(this.code).then(([result, value]) => {
+      if (result === Result.OK) {
+        success(value as V)
+      } else {
+        if (failure) {
+          if (value) {
+            failure(value as Status<M, P>)
+          } else {
+            throw new Error('failure callback is required')
+          }
         }
       }
-    }
+    })
   }
 }
 
-class SyncFailure<V, M extends Params, P extends M = M> extends SyncEffect implements Effect<V, M, P> {
+class AsyncEffect<V, M extends Params, P extends M> extends EffectImpl<V, M, P> {
+  readonly code: AsyncCode<V>
+
+  getKind(): EffectKind {
+    return EffectKind.ASync
+  }
+
+  isExecutable(): boolean {
+    return true
+  }
+
+  constructor(program: AsyncProgram<V, M, P>) {
+    super()
+    this.code = program(EffectImpl.launch)
+  }
+
+  public then(success: (value: V) => void, failure?: (status: Status<M, P>) => void): void {
+    EffectImpl.asyncExecute<V, M, P>(this.code).then(([result, value]) => {
+      if (result === Result.OK) {
+        success(value as V)
+      } else {
+        if (failure) {
+          if (value) {
+            failure(value as Status<M, P>)
+          } else {
+            throw new Error('failure callback is required')
+          }
+        }
+      }
+    })
+  }
+}
+
+class SyncFailure<V, M extends Params, P extends M = M> extends EffectImpl<V, M, P> {
+  getKind(): EffectKind {
+    return EffectKind.Sync
+  }
+
+  isExecutable(): boolean {
+    return false
+  }
+
   readonly status: Status<M, P>
 
   constructor(status: Status<M, P>) {
-    super(false)
     this.status = status
   }
 
@@ -82,9 +167,6 @@ class SyncFailure<V, M extends Params, P extends M = M> extends SyncEffect imple
   }
 }
 
-const syncCode = <R, M extends Params, P extends M>(program: Program<R>): Effect<R, M, P> =>
-  new SyncCode<R, M, P>(program)
-
 const success = <T, M extends Params, P extends M>(x: T): Effect<T, M, P> =>
   syncCode<T, M, P>(function* () {
     return x
@@ -92,10 +174,21 @@ const success = <T, M extends Params, P extends M>(x: T): Effect<T, M, P> =>
 
 const failure = <M extends Params, P extends M>(x: Status<M, P>): Effect<never, M, P> => new SyncFailure(x)
 
+const syncCode = <R, M extends Params, P extends M>(program: SyncProgram<R, M, P>): Effect<R, M, P> =>
+  new SyncEffect<R, M, P>(program)
+
 const sync = <T, F extends () => T, M extends Params, P extends M>(f: F): Effect<T, M, P> =>
   syncCode(function* () {
     return f()
   })
+
+const asyncCode = <R, M extends Params, P extends M>(program: AsyncProgram<R, M, P>): Effect<R, M, P> =>
+  new AsyncEffect<R, M, P>(program)
+
+// const async = <T, F extends () => Promise<T>, M extends Params, P extends M>(f: F): Effect<T, M, P> =>
+//   asyncCode(function* () {
+//     return f()
+//   })
 
 // Todo: Tick and remove recursion for sync execution
 const runSync = <T, M extends Params, P extends M>(effect: Effect<T, M, P>): T => {
@@ -115,7 +208,12 @@ const runSync = <T, M extends Params, P extends M>(effect: Effect<T, M, P>): T =
 export const Effects = {
   syncCode,
   sync,
+
+  asyncCode,
+  // async,
+
   success,
   failure,
+
   runSync,
 }
