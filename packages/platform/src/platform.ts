@@ -19,18 +19,18 @@ export type IntlStringFactory<M extends Params> = {
 
 export const $status =
   <M extends Params = undefined, P extends M = M>(result: Result, message?: IntlString<M>) =>
-  (id: ResourceId<StatusFactory<M, P>>) => ({
-    id,
-    create: (params: P) => ({ id, params, result, message }),
-    cast: (status: Status<any, any>): Status<M, P> => {
-      const statusId = status.id as string
-      if (statusId !== id) {
-        const errorStatus = platform.status.CastException.create({ id: statusId })
-        throw new PlatformError(errorStatus)
-      }
-      return status
-    },
-  })
+    (id: ResourceId<StatusFactory<M, P>>) => ({
+      id,
+      create: (params: P) => ({ id, params, result, message }),
+      cast: (status: Status<any, any>): Status<M, P> => {
+        const statusId = status.id as string
+        if (statusId !== id) {
+          const errorStatus = platform.status.CastException.create({ id: statusId })
+          throw new PlatformError(errorStatus)
+        }
+        return status
+      },
+    })
 
 const platformIO = createIO({
   errorToStatus: (error: unknown): Status => {
@@ -40,7 +40,7 @@ const platformIO = createIO({
   },
 
   defaultFailureHandler: (status: Status): void => {
-    console.error(status)
+    console.error('unhandled status: ', status)
   },
 })
 
@@ -59,8 +59,8 @@ export const platform = Resources.plugin('platform', (_) => ({
 }))
 
 platform.$.setLocalizedStringLoader(
-  (locale: string): Out<Record<string, string>> =>
-    platformIO.syncIO(() => {
+  (): IO<string, Record<string, string>> =>
+    platformIO.syncIO((locale: string) => {
       const localized = strings[locale] as Record<string, string>
       if (!localized) {
         throw new Error(`Unsupported locale: ${locale}`) // TODO: Need to work on IO failures
@@ -73,24 +73,31 @@ const getCurrentLocale = (): string => 'en'
 
 const cachedLocales: Map<string, Record<string, string>> = new Map()
 
-const getCachedLocale = (pluginId: PluginId, locale: string): Record<string, string> | undefined =>
-  cachedLocales.get(pluginId + '-' + locale)
-
 const setCachedLocale = (pluginId: PluginId, locale: string, strings: Record<string, string>) => {
   cachedLocales.set(pluginId + '-' + locale, strings)
 }
 
-const getLocale = (pluginId: PluginId, locale: string): Out<Record<string, string>> => {
-  const cachedLocale = getCachedLocale(pluginId, locale)
-  if (cachedLocale) {
-    platformIO.syncIO(() => cachedLocale) // TODO: success
-  }
-  const plugin = Resources.getPlugin(pluginId)
-  const localizedStrings = plugin.$.getLocalizedStrings(locale)
-  return platformIO.chain(localizedStrings, (strings) => {
-    setCachedLocale(pluginId, locale, strings)
-    return strings
-  })
+const getCachedLocale = (pluginId: PluginId, locale: string): Record<string, string> | undefined =>
+  cachedLocales.get(pluginId + '-' + locale)
+
+const getCachedLocaleIO = (pluginId: PluginId): IO<string, Record<string, string>> =>
+  platformIO.syncIO((locale: string) => getCachedLocale(pluginId, locale))
+
+const getLocalizedStrings = (pluginId: PluginId): IO<string, Record<string, string>> =>
+  Resources.getPlugin(pluginId).$.getLocalizedStrings()
+
+const getLocale = (pluginId: PluginId): IO<string, Record<string, string>> => {
+  const io = getCachedLocaleIO(pluginId).pipe(
+    platformIO.switchIO((value) => {
+      !value
+    }), getLocalizedStrings(pluginId)),
+  )
+
+console.log('loading locale', pluginId)
+return platformIO.chain(localizedStrings, (strings: Record<string, string>) => {
+  setCachedLocale(pluginId, locale, strings)
+  return strings
+})
 }
 
 const messageFormat = <P extends Params>(
@@ -102,7 +109,8 @@ const messageFormat = <P extends Params>(
     const key = Resources.destructureId(messageId).key
     const message = locales[key]
     const messageFormatter = new IntlMessageFormat(message, locale)
-    return messageFormatter.format(params as any)
+    const result = messageFormatter.format(params as any)
+    return result
   })
 
 const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<string> => {
@@ -124,4 +132,9 @@ export class PlatformError<M extends Params, P extends M> extends Error {
 export const Platform = {
   IO: platformIO,
   translate,
+}
+
+export const TestPackage = {
+  getLocale,
+  messageFormat,
 }

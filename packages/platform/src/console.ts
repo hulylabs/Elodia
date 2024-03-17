@@ -9,7 +9,7 @@ export const Console = {
   log: <T,>(value: Out<T>) => {
     value.pipe({
       success: (value) => console.log(value),
-      failure: () => {},
+      failure: (status) => console.error(status),
     })
   },
 }

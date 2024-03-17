@@ -3,17 +3,17 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { type Out } from './io'
+import { type IO } from './io'
 import type { ResourceId } from './types'
 
 export type PluginId = string & { __tag: 'plugin' }
 
-type LocalizedStringLoader = (locale: string) => Out<Record<string, string>>
+type LocalizedStringLoader = () => IO<string, Record<string, string>>
 
 interface PluginDescriptor {
   id: PluginId
   setLocalizedStringLoader: (loader: LocalizedStringLoader) => void
-  getLocalizedStrings: (locale: string) => Out<Record<string, string>>
+  getLocalizedStrings: LocalizedStringLoader
 }
 
 interface Plugin {
@@ -86,12 +86,12 @@ function plugin<R extends PluginResources>(name: string, init: (_: FactoryProvid
     setLocalizedStringLoader: (loader: LocalizedStringLoader) => {
       stringLoaders.set(id, loader)
     },
-    getLocalizedStrings: (locale: string): Out<Record<string, string>> => {
+    getLocalizedStrings: (): IO<string, Record<string, string>> => {
       const loader = stringLoaders.get(id)
       if (!loader) {
         throw new Error(`No localized string loader for plugin: ${id}`)
       }
-      return loader(locale)
+      return loader()
     },
   }
 

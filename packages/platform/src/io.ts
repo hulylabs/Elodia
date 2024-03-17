@@ -78,6 +78,12 @@ abstract class IOBase<I, O> implements IO<I, O> {
   abstract success(input: I): void
 }
 
+export const Null: IO<any, any> = {
+  success: () => {},
+  failure: () => {},
+  pipe: (sink) => sink,
+}
+
 export interface IOConfiguration {
   errorToStatus: (error: unknown) => Status
   defaultFailureHandler: Failure
@@ -85,13 +91,13 @@ export interface IOConfiguration {
 
 export function createIO(config: IOConfiguration) {
   class SyncIO<I, O> extends IOBase<I, O> {
-    constructor(private readonly op: (value: I) => O) {
+    constructor(private readonly op: (value: I, pipe?: Out<O>) => O) {
       super()
     }
 
     success(input: I) {
       try {
-        this.setResult(this.op(input))
+        this.setResult(this.op(input, this))
       } catch (error) {
         this.setStatus(config.errorToStatus(error))
       }
@@ -176,12 +182,16 @@ export function createIO(config: IOConfiguration) {
     }
   }
 
-  const syncIO = <I, O>(op: (value: I) => O): IO<I, O> => new SyncIO(op)
+  const syncIO = <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op)
   const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
   const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
   const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
 
-  const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.pipe(syncIO(op))
+  const switchIO = <I, O>(condition: (value: I) => boolean, then: IO<I, O>, otherwise?: IO<I, O>): IO<I, O> =>
+    syncIO((value: I, pipe?: Out<I>) => {
+      pipe?.pipe(condition(value) ? then : otherwise || Null)
+      return value
+    })
 
   return {
     syncIO,
@@ -189,6 +199,6 @@ export function createIO(config: IOConfiguration) {
     syncCode,
     asyncCode,
 
-    chain,
+    switchIO,
   }
 }
