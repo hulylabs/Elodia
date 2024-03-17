@@ -17,24 +17,13 @@ import { syncCode, syncIO } from '../src/io'
 test('code', () => {
   console.log('code')
   const x = syncCode(function* () {
-    yield syncIO(() => 'The answer is 42')
-    const m = yield syncIO((x) => {
-      console.log(x)
-      return 88
-    })
-    console.log('m', m)
-    yield syncIO((x) => {
-      console.log(x)
-      return 55
-    })
-    yield syncIO((x) => {
-      console.log(x)
-      return 33
-    })
-    yield syncIO((x) => {
-      console.log(x)
-      return 77
-    })
+    yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 1)
+    const x = yield syncIO((x) => x + 1)
+    console.log('x', x)
+    yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 1)
   })
-  x.success(55)
+  x.to({ success: (x) => console.log('success', x), failure: () => {} })
+  x.success(100)
 })

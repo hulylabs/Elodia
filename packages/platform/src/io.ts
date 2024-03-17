@@ -51,17 +51,25 @@ class SyncCode<I, O> extends IOBase<I, O> {
   constructor(private readonly code: (x: I) => Generator<IO<any, any>, O>) {
     super()
   }
+
+  protected loop(io: IO<any, any>, i: Generator<IO<any, any>, any>, input: any) {
+    io.to({
+      success: (value: any) => {
+        const next = i.next(value)
+        if (!next.done) this.loop(next.value, i, value)
+        else {
+          this.notifySuccess(value)
+        }
+      },
+      failure: () => {},
+    })
+    io.success(input)
+  }
+
   success(input: I) {
     const i = this.code(input)
-    function loop(value?: any) {
-      const next = i.next(value)
-      if (!next.done) {
-        const io = next.value
-        io.to({ success: (value: any) => loop(value), failure: () => {} })
-        io.success(value)
-      }
-    }
-    loop()
+    const next = i.next()
+    if (!next.done) this.loop(next.value, i, input)
   }
 }
 
