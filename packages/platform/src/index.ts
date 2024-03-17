@@ -5,7 +5,7 @@
  * Huly Platform Effects & Resources
  */
 
-// export { Effects } from './effect'
+export { IO } from './io'
 export { Resources } from './resource'
-
 export type { IntlString, Params, ResourceId } from './types'
+

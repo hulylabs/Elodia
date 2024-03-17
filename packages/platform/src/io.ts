@@ -57,7 +57,7 @@ class SyncIO<I, O> extends IOBase<I, O> {
   }
 }
 
-class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<O> {
+class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<I, O> {
   constructor(private readonly code: () => Generator<IO<any, any>, O>) {
     super()
   }
@@ -129,11 +129,20 @@ class AsyncCode<I, O> extends IOBase<I, O> {
   }
 }
 
-export const syncIO = <I, O>(op: (value: I) => O): IO<I, O> => new SyncIO(op)
-export const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
-export const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
-export const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
+const syncIO = <I, O>(op: (value: I) => O): IO<I, O> => new SyncIO(op)
+const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
+const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
+const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
 
 // export const success = <I,>(value: I): Out<I> => syncIO(() => value)
 
-export const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.to(syncIO(op))
+const chain = <I, O>(out: Out<I>, op: (value: I) => O): Out<O> => out.to(syncIO(op))
+
+export const IO = {
+  syncIO,
+  asyncIO,
+  syncCode,
+  asyncCode,
+
+  chain,
+}
