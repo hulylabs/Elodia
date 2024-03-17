@@ -6,10 +6,35 @@
 import { expect, test } from 'bun:test'
 
 import { Console } from '../src/console'
-import { syncIO } from '../src/io'
+import { syncCode, syncIO } from '../src/io'
 
-test('io', () => {
-  const io = syncIO(() => 42)
-  Console.log(io)
-  io.success(55)
+// test('io', () => {
+//   const io = syncIO(() => 'The answer is 42')
+//   Console.log(io)
+//   io.success(55)
+// })
+
+test('code', () => {
+  console.log('code')
+  const x = syncCode(function* () {
+    yield syncIO(() => 'The answer is 42')
+    const m = yield syncIO((x) => {
+      console.log(x)
+      return 88
+    })
+    console.log('m', m)
+    yield syncIO((x) => {
+      console.log(x)
+      return 55
+    })
+    yield syncIO((x) => {
+      console.log(x)
+      return 33
+    })
+    yield syncIO((x) => {
+      console.log(x)
+      return 77
+    })
+  })
+  x.success(55)
 })

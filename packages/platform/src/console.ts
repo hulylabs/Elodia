@@ -6,7 +6,7 @@
 import { chain, type Out } from './io'
 
 interface ConsoleIO {
-  log<T>(out: Out<T>): Out<T>
+  log<T>(x: Out<T>): Out<T>
 }
 
 export const Console: ConsoleIO = {
