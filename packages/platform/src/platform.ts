@@ -3,7 +3,7 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { IO, type Out } from './io'
+import { createIO, type IO, type Out } from './io'
 import { Resources, type PluginId } from './resource'
 import type { IntlString, Params, ResourceId, Status, StatusFactory } from './types'
 import { Result } from './types'
@@ -32,6 +32,11 @@ export const $status =
     },
   })
 
+const platformIO = createIO({
+  errorToStatus,
+  defaultFailureHandler,
+})
+
 const strings: any = { en }
 
 export const platform = Resources.plugin('platform', (_) => ({
@@ -48,7 +53,7 @@ export const platform = Resources.plugin('platform', (_) => ({
 
 platform.$.setLocalizedStringLoader(
   (locale: string): Out<Record<string, string>> =>
-    IO.syncIO(() => {
+    platformIO.syncIO(() => {
       const localized = strings[locale] as Record<string, string>
       if (!localized) {
         throw new Error(`Unsupported locale: ${locale}`) // TODO: Need to work on IO failures
@@ -75,7 +80,7 @@ const getLocale = (pluginId: PluginId, locale: string): Out<Record<string, strin
   }
   const plugin = Resources.getPlugin(pluginId)
   const localizedStrings = plugin.$.getLocalizedStrings(locale)
-  return IO.chain(localizedStrings, (strings) => {
+  return platformIO.chain(localizedStrings, (strings) => {
     setCachedLocale(pluginId, locale, strings)
     return strings
   })
@@ -86,7 +91,7 @@ const messageFormat = <P extends Params>(
   messageId: IntlString<P>,
   params: P,
 ): IO<Record<string, string>, string> =>
-  IO.syncIO((locales: Record<string, string>) => {
+  platformIO.syncIO((locales: Record<string, string>) => {
     const key = Resources.destructureId(messageId).key
     const message = locales[key]
     const messageFormatter = new IntlMessageFormat(message, locale)
@@ -100,11 +105,14 @@ const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<s
   return cachedLocale ? format : getLocale(Resources.destructureId(messageId).pluginId, locale).pipe(format)
 }
 
-export function getStatus<M extends Params, P extends M>(error: Error) {
-  if (error instanceof PlatformError) {
-    return error.status as Status<M, P>
-  }
-  return platform.status.UnknownError.create({ message: error.message })
+function errorToStatus(error: unknown): Status {
+  if (error instanceof PlatformError) return error.status
+  if (error instanceof Error) return platform.status.UnknownError.create({ message: error.message })
+  throw error // not our business
+}
+
+function defaultFailureHandler(status: Status): void {
+  console.error(status)
 }
 
 export class PlatformError<M extends Params, P extends M> extends Error {
@@ -117,5 +125,6 @@ export class PlatformError<M extends Params, P extends M> extends Error {
 }
 
 export const Platform = {
+  IO: platformIO,
   translate,
 }
