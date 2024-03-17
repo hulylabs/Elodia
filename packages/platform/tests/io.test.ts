@@ -55,3 +55,19 @@ test('mixed code in async gen', () => {
   x.to({ success: (x) => console.log('success', x), failure: () => {} })
   x.success(1000)
 })
+
+test('yeld* test', () => {
+  const sub = syncCode(function* () {
+    yield syncIO((x) => x + 1)
+    yield syncIO((x) => x + 1)
+  })
+  const root = syncCode(function* () {
+    yield syncIO((x) => x + 1)
+    const s = yield* sub
+    yield syncIO((x) => x + 1)
+    console.log('s', s)
+  })
+
+  root.to({ success: (x) => console.log('success', x), failure: () => {} })
+  root.success(500)
+})

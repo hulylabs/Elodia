@@ -17,6 +17,12 @@ export interface Out<O> {
 
 export interface IO<I, O> extends Sink<I>, Out<O> {}
 
+type AnyIO = IO<any, any>
+
+interface SyncIterator<I, O> extends IO<I, O> {
+  [Symbol.iterator](): Iterator<AnyIO, O>
+}
+
 abstract class IOBase<I, O> implements IO<I, O> {
   private out?: Sink<O> | Sink<O>[]
 
@@ -45,10 +51,14 @@ class SyncIO<I, O> extends IOBase<I, O> {
   success(input: I) {
     this.notifySuccess(this.op(input))
   }
+
+  [Symbol.iterator](): Iterator<AnyIO, O> {
+    throw new Error('Method not implemented.')
+  }
 }
 
-class SyncCode<I, O> extends IOBase<I, O> {
-  constructor(private readonly code: (x: I) => Generator<IO<any, any>, O>) {
+class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<O> {
+  constructor(private readonly code: () => Generator<IO<any, any>, O>) {
     super()
   }
 
@@ -65,9 +75,18 @@ class SyncCode<I, O> extends IOBase<I, O> {
   }
 
   success(input: I) {
-    const i = this.code(input)
+    const i = this.code()
     const next = i.next()
     if (!next.done) this.loop(next.value, i, input)
+  }
+
+  [Symbol.iterator](): Iterator<AnyIO, O> {
+    const i = this.code()
+    return {
+      next: () => {
+        return i.next()
+      },
+    }
   }
 }
 
@@ -112,7 +131,7 @@ class AsyncCode<I, O> extends IOBase<I, O> {
 
 export const syncIO = <I, O>(op: (value: I) => O): IO<I, O> => new SyncIO(op)
 export const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
-export const syncCode = <I, O>(code: (x: I) => Generator<IO<any, any>>): IO<I, O> => new SyncCode(code)
+export const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
 export const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
 
 // export const success = <I,>(value: I): Out<I> => syncIO(() => value)
