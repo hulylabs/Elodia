@@ -5,7 +5,7 @@
 
 import { expect, test } from 'bun:test'
 
-import { Resources, type IntlString } from '../src'
+import { Resources } from '../src'
 import { pipe, success } from '../src/io'
 import { Platform, TestPackage, platform } from '../src/platform'
 import type { Locale, PluginId } from '../src/resource'

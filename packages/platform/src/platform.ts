@@ -5,7 +5,7 @@
 
 import { createIO, pipe, success, type IO, type Out } from './io'
 import { Resources, pluginId, type Locale, type LocalizedStrings, type PluginId } from './resource'
-import type { IntlString, Params, ResourceId, Status, StatusFactory } from './types'
+import type { IntlString, Params, ResourceId, Status } from './types'
 import { Result } from './types'
 
 import IntlMessageFormat from 'intl-messageformat'
@@ -19,13 +19,12 @@ export type IntlStringFactory<M extends Params> = {
 
 export const $status =
   <M extends Params = undefined, P extends M = M>(result: Result, message?: IntlString<M>) =>
-  (id: ResourceId<StatusFactory<M, P>>) => ({
+  (id: ResourceId<any>) => ({
     id,
     create: (params: P) => ({ id, params, result, message }),
     cast: (status: Status<any, any>): Status<M, P> => {
-      const statusId = status.id as string
-      if (statusId !== id) {
-        const errorStatus = platform.status.CastException.create({ id: statusId })
+      if (status.id !== id) {
+        const errorStatus = platform.status.CastException.create({ id: status.id })
         throw new PlatformError(errorStatus)
       }
       return status
@@ -37,7 +36,7 @@ type IOResourceFactory<I, O> = (id: ResourceId<any>) => () => IO<I, O>
 export const $IO = <I, O>(factory: IOResourceFactory<I, O>) => factory
 
 const platformIO = createIO({
-  errorToStatus: (error: unknown): Status => {
+  errorToStatus: (error: unknown): Status<any> => {
     if (error instanceof PlatformError) return error.status
     if (error instanceof Error) return platform.status.UnknownError.create({ message: error.message })
     throw error // not our business
@@ -87,7 +86,7 @@ const messageFormatIO = <P extends Params>(
   locale: string,
   messageId: IntlString<P>,
   params?: P,
-): IO<Record<string, string>, string> =>
+): IO<LocalizedStrings, string> =>
   platformIO.syncIO((strings: LocalizedStrings) => {
     console.log('strings: ', strings)
     const key = Resources.destructureId(messageId).key
@@ -100,27 +99,24 @@ const messageFormatIO = <P extends Params>(
   })
 
 const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<string> => {
+  const cacheStringsIO = () =>
+    platformIO.syncIO((strings: LocalizedStrings) => {
+      cachedStrings.set(cacheKey(pluginId(messageId), locale), strings)
+      return strings
+    })
+
   const locale = getCurrentLocale()
   const formatIO = messageFormatIO(locale, messageId, params)
   const cached = cachedStrings.get(cacheKey(pluginId(messageId), locale))
 
-  if (cached) {
-    console.log('use cached strings: ', cached)
-    return success(cached).pipe(formatIO)
-  }
-
-  console.log('fetching strings for locale: ', locale)
-  const io = pipe(
-    Resources.getPlugin(pluginId(messageId)).$.getLocalizedStrings(),
-    platformIO.syncIO((strings: LocalizedStrings) => {
-      console.log('fetched strings: ', strings)
-      cachedStrings.set(cacheKey(pluginId(messageId), locale), strings)
-      return strings
-    }),
-    formatIO,
-  )
-  io.success(locale)
-  return io
+  return cached
+    ? pipe(success(cached), formatIO)
+    : pipe(
+        success(locale),
+        Resources.getPlugin(pluginId(messageId)).$.getLocalizedStrings(),
+        cacheStringsIO(),
+        formatIO,
+      )
 }
 
 export class PlatformError<M extends Params, P extends M> extends Error {
