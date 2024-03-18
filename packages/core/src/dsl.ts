@@ -2,6 +2,8 @@
 // © 2024 Hardcore Engineering, Inc. All Rights Reserved.
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
+// · core/dsl.ts
+//
 
 import type { IntlString, ResourceId } from '@huly/platform'
 import type { Class, Doc, Obj, Ref } from './model'
