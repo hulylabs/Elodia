@@ -6,38 +6,41 @@
 import { expect, test } from 'bun:test'
 
 import { Resources, type IntlString } from '../src'
-import { Console } from '../src/console'
 import { Platform, TestPackage, platform } from '../src/platform'
+import type { Locale, PluginId } from '../src/resource'
+import { expectIO } from './util'
 
-test('console', () => {
-  const io = Platform.IO.syncIO((x) => x)
-  Console.log(io)
-  io.success('x')
-})
+import platorm_en from '../lang/en.json'
 
 test('messageFormat', () => {
-  const { messageFormat } = TestPackage
+  const { messageFormatIO } = TestPackage
 
-  const format1 = messageFormat('en', 'nonsence' as IntlString, undefined)
-  Console.log(format1)
-  format1.success({})
-
-  const format2 = messageFormat('en', 'platform:string:CopyrightMessage' as IntlString, undefined)
-  Console.log(format2)
-  format2.success({
-    CopyrightMessage:
-      '© 2024 Hardcore Engineering, Inc. All Rights Reserved. Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).',
-  })
+  expectIO(
+    messageFormatIO('en', platform.string.CopyrightMessage).success({
+      CopyrightMessage:
+        '© 2024 Hardcore Engineering, Inc. All Rights Reserved. Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).',
+    }),
+    (value) => {
+      expect(value).toBe(
+        '© 2024 Hardcore Engineering, Inc. All Rights Reserved. Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).',
+      )
+    },
+  )
 })
 
-test('getLocale', () => {
-  const { getLocale } = TestPackage
-
-  const locale1 = getLocale('platform' as any, 'en')
-  Console.log(locale1)
+test('get platform en strings', () => {
+  expectIO(
+    Resources.getPlugin('platform' as PluginId)
+      .$.getLocalizedStrings()
+      .success('en' as Locale),
+    (value) => {
+      expect(value).toEqual(platorm_en)
+    },
+  )
 })
 
 test('translate', () => {
-  const translate1 = Platform.translate('platform:string:CopyrightMessage' as IntlString, undefined)
-  Console.log(translate1)
+  expectIO(Platform.translate(platform.string.CopyrightMessage), (translate) => {
+    expect(translate).toBe('Author 1')
+  })
 })

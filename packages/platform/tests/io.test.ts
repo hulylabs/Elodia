@@ -5,15 +5,41 @@
 
 import { expect, test } from 'bun:test'
 
-import { Console } from '../src/console'
+import type { ResourceId } from '../src'
+import { pipe, printDiagnostic, setId, success, type IO } from '../src/io'
 import { Platform } from '../src/platform'
+import { expectIO } from './util'
 
 const { IO } = Platform
 
-test('message sent after', () => {
-  const io = IO.syncIO((x) => x)
-  io.success('hello world, console')
-  Console.log(io)
+test('expect', () => {
+  const x = pipe(
+    success(111),
+    IO.syncIO((x) => x * 3),
+    Platform.log(),
+  )
+  expectIO(x, (value) => expect(value).toBe(333))
+})
+
+test('diagnostics', () => {
+  const add = IO.syncIO((x: number) => x + 1)
+  setId(add, 'add' as ResourceId)
+  const mul = IO.syncIO((x: number) => x + 2)
+  setId(mul, 'mul' as ResourceId)
+  add.pipe(mul)
+  printDiagnostic(add)
+  printDiagnostic(mul)
+})
+
+test('pipe test', () => {
+  const add = IO.syncIO((x: number) => x + 1)
+  setId(add, 'add' as ResourceId)
+  const mul = IO.syncIO((x: number) => x * 2)
+  setId(mul, 'mul' as ResourceId)
+  const x = pipe(mul, add)
+  console.log('x', x)
+  printDiagnostic(x as any)
+  expectIO(x, (value) => expect(value).toBe(-1))
 })
 
 test('sync code', () => {

@@ -3,8 +3,8 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import { createIO, type IO, type Out } from './io'
-import { Resources, type PluginId } from './resource'
+import { createIO, pipe, success, type IO, type Out } from './io'
+import { Resources, pluginId, type Locale, type LocalizedStrings, type PluginId } from './resource'
 import type { IntlString, Params, ResourceId, Status, StatusFactory } from './types'
 import { Result } from './types'
 
@@ -19,18 +19,22 @@ export type IntlStringFactory<M extends Params> = {
 
 export const $status =
   <M extends Params = undefined, P extends M = M>(result: Result, message?: IntlString<M>) =>
-    (id: ResourceId<StatusFactory<M, P>>) => ({
-      id,
-      create: (params: P) => ({ id, params, result, message }),
-      cast: (status: Status<any, any>): Status<M, P> => {
-        const statusId = status.id as string
-        if (statusId !== id) {
-          const errorStatus = platform.status.CastException.create({ id: statusId })
-          throw new PlatformError(errorStatus)
-        }
-        return status
-      },
-    })
+  (id: ResourceId<StatusFactory<M, P>>) => ({
+    id,
+    create: (params: P) => ({ id, params, result, message }),
+    cast: (status: Status<any, any>): Status<M, P> => {
+      const statusId = status.id as string
+      if (statusId !== id) {
+        const errorStatus = platform.status.CastException.create({ id: statusId })
+        throw new PlatformError(errorStatus)
+      }
+      return status
+    },
+  })
+
+type IOResourceFactory<I, O> = (id: ResourceId<any>) => () => IO<I, O>
+
+export const $IO = <I, O>(factory: IOResourceFactory<I, O>) => factory
 
 const platformIO = createIO({
   errorToStatus: (error: unknown): Status => {
@@ -56,7 +60,10 @@ export const platform = Resources.plugin('platform', (_) => ({
     License: _(),
     Author_1: _(),
   },
+  io: {},
 }))
+
+// TODO: $IO
 
 platform.$.setLocalizedStringLoader(
   (): IO<string, Record<string, string>> =>
@@ -69,55 +76,51 @@ platform.$.setLocalizedStringLoader(
     }),
 )
 
-const getCurrentLocale = (): string => 'en'
+const getCurrentLocale = (): Locale => 'en' as Locale
 
-const cachedLocales: Map<string, Record<string, string>> = new Map()
+type CacheKey = string & { __cacheKey: true }
 
-const setCachedLocale = (pluginId: PluginId, locale: string, strings: Record<string, string>) => {
-  cachedLocales.set(pluginId + '-' + locale, strings)
-}
+const cachedStrings: Map<CacheKey, LocalizedStrings> = new Map()
+const cacheKey = (pluginId: PluginId, locale: Locale) => (pluginId + '-' + locale) as CacheKey
 
-const getCachedLocale = (pluginId: PluginId, locale: string): Record<string, string> | undefined =>
-  cachedLocales.get(pluginId + '-' + locale)
-
-const getCachedLocaleIO = (pluginId: PluginId): IO<string, Record<string, string>> =>
-  platformIO.syncIO((locale: string) => getCachedLocale(pluginId, locale))
-
-const getLocalizedStrings = (pluginId: PluginId): IO<string, Record<string, string>> =>
-  Resources.getPlugin(pluginId).$.getLocalizedStrings()
-
-const getLocale = (pluginId: PluginId): IO<string, Record<string, string>> => {
-  const io = getCachedLocaleIO(pluginId).pipe(
-    platformIO.switchIO((value) => {
-      !value
-    }), getLocalizedStrings(pluginId)),
-  )
-
-console.log('loading locale', pluginId)
-return platformIO.chain(localizedStrings, (strings: Record<string, string>) => {
-  setCachedLocale(pluginId, locale, strings)
-  return strings
-})
-}
-
-const messageFormat = <P extends Params>(
+const messageFormatIO = <P extends Params>(
   locale: string,
   messageId: IntlString<P>,
-  params: P,
+  params?: P,
 ): IO<Record<string, string>, string> =>
-  platformIO.syncIO((locales: Record<string, string>) => {
+  platformIO.syncIO((strings: LocalizedStrings) => {
+    console.log('strings: ', strings)
     const key = Resources.destructureId(messageId).key
-    const message = locales[key]
+    console.log('key: ', key)
+    const message = strings[key]
+    console.log('message: ', message)
     const messageFormatter = new IntlMessageFormat(message, locale)
-    const result = messageFormatter.format(params as any)
+    const result = messageFormatter.format(params as any) as string
     return result
   })
 
-const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<string> => {
+const translate = <P extends Params>(messageId: IntlString<P>, params?: P): Out<string> => {
   const locale = getCurrentLocale()
-  const format = messageFormat(locale, messageId, params)
-  const cachedLocale = cachedLocales.get(locale)
-  return cachedLocale ? format : getLocale(Resources.destructureId(messageId).pluginId, locale).pipe(format)
+  const formatIO = messageFormatIO(locale, messageId, params)
+  const cached = cachedStrings.get(cacheKey(pluginId(messageId), locale))
+
+  if (cached) {
+    console.log('use cached strings: ', cached)
+    return success(cached).pipe(formatIO)
+  }
+
+  console.log('fetching strings for locale: ', locale)
+  const io = pipe(
+    Resources.getPlugin(pluginId(messageId)).$.getLocalizedStrings(),
+    platformIO.syncIO((strings: LocalizedStrings) => {
+      console.log('fetched strings: ', strings)
+      cachedStrings.set(cacheKey(pluginId(messageId), locale), strings)
+      return strings
+    }),
+    formatIO,
+  )
+  io.success(locale)
+  return io
 }
 
 export class PlatformError<M extends Params, P extends M> extends Error {
@@ -129,12 +132,18 @@ export class PlatformError<M extends Params, P extends M> extends Error {
   }
 }
 
+const log = () =>
+  platformIO.syncIO((value: any) => {
+    console.log('***** PLATFORM: ', value)
+    return value
+  })
+
 export const Platform = {
   IO: platformIO,
   translate,
+  log,
 }
 
 export const TestPackage = {
-  getLocale,
-  messageFormat,
+  messageFormatIO,
 }

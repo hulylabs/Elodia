@@ -14,6 +14,7 @@ test('Resources.plugin', () => {
     class: {
       Object: _<{ x: string }>(),
       Class: _<string>(),
+      Doc: _(),
     },
     status: {
       OK: _<string>((id) => id + '-OK'),
@@ -23,8 +24,10 @@ test('Resources.plugin', () => {
       N5: 5,
     },
   }))
+
   expect(plugin.class.Object as string).toBe('plugin:class:Object')
   expect(plugin.class.Class as string).toBe('plugin:class:Class')
+  expect(plugin.class.Doc as string).toBe('plugin:class:Doc')
   expect(plugin.status.OK).toBe('plugin:status:OK-OK')
   expect(plugin.const.N5).toBe(5)
 

@@ -8,7 +8,10 @@ import type { ResourceId } from './types'
 
 export type PluginId = string & { __tag: 'plugin' }
 
-type LocalizedStringLoader = () => IO<string, Record<string, string>>
+export type Locale = string & { __tag: 'Locale' }
+export type LocalizedStrings = Record<string, string>
+
+type LocalizedStringLoader = () => IO<Locale, LocalizedStrings>
 
 interface PluginDescriptor {
   id: PluginId
@@ -20,18 +23,32 @@ interface Plugin {
   $: PluginDescriptor
 }
 
-interface Factory<V> {
-  __factory: (id: ResourceId<V>) => V
+type ResourceFactory<R> = (id: ResourceId<unknown>) => R
+interface FactoryBox<R> {
+  __preserve_type?: R
+  __factory: ResourceFactory<R>
 }
 
-type CategoryResources = { [key: string]: unknown }
-type CategoryResourcesAfterFactories<V extends CategoryResources> = {
-  [K in keyof V]: V[K] extends Factory<infer T> ? T : V[K]
+function isFactoryBox(value: unknown): value is FactoryBox<unknown> {
+  return typeof value === 'object' && value !== null && '__factory' in value
 }
 
-type PluginResources = Record<string, CategoryResources>
-type PluginResourcesAfterFactories<R extends PluginResources> = {
-  [K in keyof R]: CategoryResourcesAfterFactories<R[K]>
+interface FactoryWrapper {
+  <R>(): FactoryBox<ResourceId<R>> // => ({ __factory: (id: ResourceId<ResourceId<R>>) => id as ResourceId<R> }), // keep resource id as is
+  <R>(factory: ResourceFactory<R>): FactoryBox<R> //=> ({ __factory: factory }), // wrap factory
+}
+
+const factoryWrapper = <R,>(factory?: ResourceFactory<R>): FactoryBox<R> | FactoryBox<ResourceId<R>> =>
+  factory ? { __factory: factory } : { __factory: (id: ResourceId<any>) => id as ResourceId<R> }
+
+type CategoryUResources = { [key: string]: unknown }
+type CategoryIResources<V extends CategoryUResources> = {
+  [K in keyof V]: V[K] extends FactoryBox<infer T> ? T : V[K]
+}
+
+type PluginUResources = Record<string, CategoryUResources>
+type PluginIResources<R extends PluginUResources> = {
+  [K in keyof R]: CategoryIResources<R[K]>
 }
 
 function mapObject<T, U>(
@@ -55,38 +72,31 @@ const destructureId = (id: ResourceId<any>) => {
   }
 }
 
-function isFactory(value: unknown): value is Factory<unknown> {
-  return typeof value === 'object' && value !== null && '__factory' in value
-}
-
-const callFactory = (id: string, value: unknown): unknown =>
-  isFactory(value) ? value.__factory(id as ResourceId<any>) : value
-
-interface FactoryProvider {
-  <V>(factory: (id: ResourceId<V>) => V): Factory<V>
-  <X>(): Factory<ResourceId<X>>
-}
-
-const factoryProvider = <V,>(factory?: (id: ResourceId<V>) => V) => ({
-  __factory: factory || ((id: ResourceId<V>) => id),
-})
+export const pluginId = (id: ResourceId<any>) => destructureId(id).pluginId
 
 const stringLoaders: Map<PluginId, LocalizedStringLoader> = new Map()
 const plugins: Map<PluginId, Plugin> = new Map()
 
-function plugin<R extends PluginResources>(name: string, init: (_: FactoryProvider) => R) {
+const callFactory = (id: string, value: unknown): unknown => {
+  if (isFactoryBox(value)) {
+    return callFactory(id, value.__factory(id as ResourceId<unknown>))
+  }
+  return value
+}
+
+function plugin<R extends PluginUResources>(name: string, uResources: (_: FactoryWrapper) => R) {
   const id = name as PluginId
 
-  const resources = mapObject(init(factoryProvider), name, (name, category) =>
-    mapObject(category, name, (id, value) => callFactory(id, value)),
-  ) as PluginResourcesAfterFactories<R>
+  const resources = mapObject(uResources(factoryWrapper), name, (name, category) =>
+    mapObject(category, name, callFactory),
+  ) as PluginIResources<R>
 
   const descriptor: PluginDescriptor = {
     id,
     setLocalizedStringLoader: (loader: LocalizedStringLoader) => {
       stringLoaders.set(id, loader)
     },
-    getLocalizedStrings: (): IO<string, Record<string, string>> => {
+    getLocalizedStrings: (): IO<Locale, LocalizedStrings> => {
       const loader = stringLoaders.get(id)
       if (!loader) {
         throw new Error(`No localized string loader for plugin: ${id}`)

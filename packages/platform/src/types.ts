@@ -22,7 +22,7 @@ export type Params = Record<string, Primitive> | undefined
  * console.log(core.function.Optimize);  // Output: 'core:function:Optimize'
  */
 
-export type ResourceId<T> = string & { __resource: T }
+export type ResourceId<T = any> = string & { __resource: T }
 export type IntlString<P extends Params = undefined> = ResourceId<P>
 
 // S T A T U S

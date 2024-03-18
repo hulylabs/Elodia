@@ -3,18 +3,19 @@
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
 
-import type { Status } from './types'
+import type { ResourceId, Status } from './types'
+import { addCompList, iterateCompList, type CompList } from './util'
 
 type Success<T> = (result: T) => void
 type Failure = (status: Status) => void
 
-interface Sink<T> {
+export interface Sink<T> {
   success: Success<T>
   failure?: Failure
 }
 
 export interface Out<O> {
-  pipe: <X extends Sink<O>>(input: X) => X
+  pipe: <X extends Sink<O>>(input: Sink<O>) => X
 }
 
 export interface IO<I, O> extends Sink<I>, Out<O> {}
@@ -31,35 +32,37 @@ enum State {
   Failure,
 }
 
-abstract class IOBase<I, O> implements IO<I, O> {
-  private out?: Sink<O> | Sink<O>[]
-  private state: State = State.Pending
-  private result?: O | Status
+abstract class IODiagnostic<I, O> implements IO<I, O> {
+  protected static sequence = 0
+
+  id = `io-${(IODiagnostic.sequence++).toString(32)}` as ResourceId<IO<I, O>>
+
+  abstract success(input: I): void
+  abstract failure(status: Status): void
+  abstract pipe<X extends Sink<O>>(sink: Sink<O>): X
+
+  abstract printDiagnostic(level?: number): void
+}
+
+abstract class IOBase<I, O> extends IODiagnostic<I, O> {
+  private out: CompList<Sink<O>>
+  protected state: State = State.Pending
+  protected result?: O | Status
 
   protected setResult(result: O): void {
     this.result = result
     this.state = State.Success
-    if (this.out)
-      if (Array.isArray(this.out)) for (const sink of this.out) sink.success(this.result!)
-      else this.out.success(this.result!)
+    for (const sink of iterateCompList(this.out)) sink.success(this.result!)
   }
 
   protected setStatus(status: Status): void {
     this.result = status
     this.state = State.Failure
-    if (this.out)
-      if (Array.isArray(this.out))
-        for (const sink of this.out) {
-          if (sink.failure) sink.failure(this.result)
-        }
-      else if (this.out.failure) this.out.failure(this.result)
+    for (const sink of iterateCompList(this.out)) sink.failure?.(this.result!)
   }
 
-  pipe<X extends Sink<O>>(sink: X): X {
-    if (this.out)
-      if (Array.isArray(this.out)) this.out.push(sink)
-      else this.out = [this.out, sink]
-    else this.out = sink
+  pipe<X extends Sink<O>>(sink: Sink<O>): X {
+    this.out = addCompList(this.out, sink)
     switch (this.state) {
       case State.Success:
         sink.success(this.result as O)
@@ -68,20 +71,83 @@ abstract class IOBase<I, O> implements IO<I, O> {
         if (sink.failure) sink.failure(this.result as Status)
         break
     }
-    return sink // for chaining
+    return sink as X // for chaining
   }
 
   failure(status: Status): void {
     this.setStatus(status)
   }
 
-  abstract success(input: I): void
+  printDiagnostic(level: number = 0) {
+    const indent = '  '.repeat(level) + ' ·'
+    console.log(`${indent} IO: ${this.id} (${this.state})`)
+    for (const sink of iterateCompList(this.out)) {
+      ;(sink as IOBase<any, any>).printDiagnostic(level + 1)
+    }
+  }
 }
 
-export const Null: IO<any, any> = {
-  success: () => {},
-  failure: () => {},
-  pipe: (sink) => sink,
+class SuccessIO<T> extends IOBase<T, T> {
+  constructor(result: T) {
+    super()
+    this.result = result
+    this.state = State.Success
+  }
+
+  success(_: T): void {
+    throw new Error('No input expected')
+  }
+}
+
+export const success = <T,>(result: T): IO<T, T> => new SuccessIO(result)
+
+class PipeIO<I, O> extends IODiagnostic<I, O> {
+  id = `io-pipe-${(IODiagnostic.sequence++).toString(32)}` as ResourceId<IO<any, any>>
+
+  constructor(
+    private readonly first: IO<I, O>,
+    private readonly last: IO<I, O>,
+  ) {
+    super()
+  }
+
+  success(input: I): void {
+    this.first.success(input)
+  }
+
+  failure(status: Status): void {
+    this.first.failure?.(status)
+  }
+
+  pipe<X extends Sink<O>>(sink: Sink<O>): X {
+    this.last.pipe(sink)
+    return sink as X
+  }
+
+  printDiagnostic() {
+    console.log(`IO: ${this.id} (pipe)`)
+    ;(this.first as IODiagnostic<any, any>).printDiagnostic(1)
+  }
+}
+
+export function pipe<A, B>(io: IO<A, B>): IO<A, B>
+export function pipe<A, B, C>(io1: IO<A, B>, io2: IO<B, C>): IO<A, C>
+export function pipe<A, B, C, D>(io1: IO<A, B>, io2: IO<B, C>, io3: IO<C, D>): IO<A, D>
+export function pipe<A, B, C, D, E>(io1: IO<A, B>, io2: IO<B, C>, io3: IO<C, D>, io4: IO<D, E>): IO<A, E>
+
+export function pipe(...ios: IO<any, any>[]): IO<any, any> {
+  const first = ios[0]
+  const last = ios.reduce((io, current) => io.pipe(current))
+  return new PipeIO(first, last)
+}
+
+export const setId = <I, O>(io: IO<I, O>, id: ResourceId<IO<I, O>>) => {
+  ;(io as any).id = id
+}
+export const getId = <I, O>(io: IO<I, O>): ResourceId<IO<I, O>> | undefined => (io as any).id
+
+export const printDiagnostic = <I, O>(io: IO<I, O>) => {
+  ;(io as IOBase<I, O>).printDiagnostic()
 }
 
 export interface IOConfiguration {
@@ -95,12 +161,13 @@ export function createIO(config: IOConfiguration) {
       super()
     }
 
-    success(input: I) {
+    success(input: I): Out<O> {
       try {
         this.setResult(this.op(input, this))
       } catch (error) {
         this.setStatus(config.errorToStatus(error))
       }
+      return this
     }
 
     [Symbol.iterator](): Iterator<AnyIO, O> {
@@ -127,10 +194,11 @@ export function createIO(config: IOConfiguration) {
       io.success(input)
     }
 
-    success(input: I) {
+    success(input: I): Out<O> {
       const i = this.code()
       const next = i.next()
       if (!next.done) this.loop(next.value, i, input)
+      return this
     }
 
     [Symbol.iterator](): Iterator<AnyIO, O> {
@@ -147,8 +215,9 @@ export function createIO(config: IOConfiguration) {
     constructor(private readonly op: (value: I) => Promise<O>) {
       super()
     }
-    success(input: I) {
+    success(input: I): Out<O> {
       this.op(input).then(this.setResult.bind(this), this.setStatus.bind(this))
+      return this
     }
   }
 
@@ -172,13 +241,14 @@ export function createIO(config: IOConfiguration) {
       io.success(input)
     }
 
-    success(input: I) {
+    success(input: I): Out<O> {
       const i = this.code(input)
       const loop = this.loop.bind(this)
       const next = i.next()
       next.then((next) => {
         if (!next.done) loop(next.value, i, input)
       })
+      return this
     }
   }
 
@@ -187,18 +257,10 @@ export function createIO(config: IOConfiguration) {
   const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
   const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
 
-  const switchIO = <I, O>(condition: (value: I) => boolean, then: IO<I, O>, otherwise?: IO<I, O>): IO<I, O> =>
-    syncIO((value: I, pipe?: Out<I>) => {
-      pipe?.pipe(condition(value) ? then : otherwise || Null)
-      return value
-    })
-
   return {
     syncIO,
     asyncIO,
     syncCode,
     asyncCode,
-
-    switchIO,
   }
 }
