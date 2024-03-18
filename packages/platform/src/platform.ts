@@ -99,7 +99,7 @@ const messageFormatIO = <P extends Params>(
     return result
   })
 
-const translate = <P extends Params>(messageId: IntlString<P>, params?: P): Out<string> => {
+const translate = <P extends Params>(messageId: IntlString<P>, params: P): Out<string> => {
   const locale = getCurrentLocale()
   const formatIO = messageFormatIO(locale, messageId, params)
   const cached = cachedStrings.get(cacheKey(pluginId(messageId), locale))

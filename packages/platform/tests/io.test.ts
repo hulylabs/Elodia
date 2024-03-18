@@ -37,7 +37,6 @@ test('pipe test', () => {
   const mul = IO.syncIO((x: number) => x * 2)
   setId(mul, 'mul' as ResourceId)
   const x = pipe(mul, add)
-  console.log('x', x)
   printDiagnostic(x as any)
   expectIO(x, (value) => expect(value).toBe(-1))
 })
