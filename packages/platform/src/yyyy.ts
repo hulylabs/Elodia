@@ -11,9 +11,9 @@ import { mapObjects } from './util'
 
 export type PluginId = string & { __tag: 'plugin-id' }
 export type ResourceTypeId<I extends string> = I & { __tag: 'resource-type-id' }
-export type ResourceType<I extends string, T> = {
+type ResourceType<I extends string, T> = {
   id: ResourceTypeId<I>
-  type: T
+  __type: T // virtual field to help with type inference
 }
 
 export type ResourceId<I extends string, T> = {
@@ -23,39 +23,50 @@ export type ResourceId<I extends string, T> = {
 }
 
 // type Resource<I extends string, T> = any & { __id: I; __type: T }
-
 type ResourceConstructor<I extends string, T, R> = (resource: ResourceId<I, T>) => R
 type AnyResourceConstructor = ResourceConstructor<any, any, any>
 type ResourceConstructors = Record<string, AnyResourceConstructor>
 
+export const createResourceType = <T, I extends string>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
+
 // P R O V I D E R S
 
+// type ResourceConstructorFactory<I extends string, T, R> = (...args: any[]) => ResourceConstructor<I, T, R>
+// type ResourceConstructorFactories<I extends string, T> = Record<string, ResourceConstructorFactory<I, T, any>>
+
 type ResourceConstructorFactory<I extends string, T, R> = (...args: any[]) => ResourceConstructor<I, T, R>
-type ResourceConstructorFactories<I extends string, T> = Record<string, ResourceConstructorFactory<I, T, any>>
 
-export interface ResourceProvider<I extends string, T, F extends ResourceConstructorFactories<I, T>> {
+export interface ResourceProvider<I extends string, T, F extends ResourceConstructorFactory<I, T, any>> {
   type: ResourceType<I, T>
-  factories: F
+  factory: F
 }
-type AnyResourceProvider = ResourceProvider<any, any, any>
+type AnyResourceProvider = ResourceProvider<string, any, any>
 
-// P L U G I N  R E S O U R C E S
+// P L U G I N
 
 interface PluginResourceConstructors {
   [key: string]: ResourceConstructors
 }
 
-type InferredResource<R extends AnyResourceConstructor> = ReturnType<R>
+// type InferredResource<R extends AnyResourceConstructor> = ReturnType<R>
+
+// type InferredResources<P extends PluginResourceConstructors> = {
+//   [K in keyof P]: P[K] extends Record<string, infer R>
+//     ? R extends AnyResourceConstructor
+//       ? InferredResource<R>
+//       : never
+//     : never
+// }
 
 type InferredResources<P extends PluginResourceConstructors> = {
-  [K in keyof P]: P[K] extends Record<string, infer R>
-    ? R extends AnyResourceConstructor
-      ? InferredResource<R>
+  [PluginKey in keyof P]: {
+    [ResourceKey in keyof P[PluginKey]]: P[PluginKey][ResourceKey] extends AnyResourceConstructor
+      ? ReturnType<P[PluginKey][ResourceKey]>
       : never
-    : never
+  }
 }
 
-export const createResources = <P extends PluginResourceConstructors, T extends Array<AnyResourceProvider>>(
+const createResources = <P extends PluginResourceConstructors, T extends Array<AnyResourceProvider>>(
   providers: T,
   pluginId: PluginId,
   pluginConstructors: P,
@@ -65,5 +76,56 @@ export const createResources = <P extends PluginResourceConstructors, T extends 
     return acc
   }, {} as any)
 
-export const createHelper = <X extends Array<AnyResourceProvider>>(providers: X) =>
-  providers.reduce((acc, { factories }) => ({ ...acc, ...factories }), {})
+// P L A T F O R M
+
+type InferredHelpers<P extends AnyResourceProvider[]> = {
+  [K in keyof P]: P[K] extends ResourceProvider<infer I, any, infer F> ? { [key in I]: F } : never
+}[number]
+
+export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]) => {
+  const helper = Object.fromEntries(providers.map((provider) => [provider.type.id, provider.factory])) as {
+    [K in keyof InferredHelpers<P>]: InferredHelpers<P>[K]
+  }
+
+  return {
+    plugin: <T extends PluginResourceConstructors>(name: string, template: (_: typeof helper) => T) => ({
+      ...createResources<T, P>(providers, name as PluginId, template(helper)),
+    }),
+  }
+}
+
+//   const id = name as PluginId
+//   const pluginConstructors = template(helper)
+//   const resources =
+// })
+
+// E X A M P L E
+
+type IntlResourceTypeId = 'i18n'
+
+type Primitive = string | number | boolean
+type Params = Record<string, Primitive>
+
+// type IntlStringType<P extends Params> = ResourceType<IntlResourceTypeId, P>
+type IntlString<P extends Params> = ResourceId<IntlResourceTypeId, P>
+
+const translate = <P extends Params>(i18n: IntlString<P>, params: P): string => i18n.key + JSON.stringify(params)
+
+const IntlStringResourceProvider = {
+  type: createResourceType<Params, 'i18n'>('i18n'),
+  factory:
+    <P extends Params>() =>
+    (i18n: IntlString<P>) =>
+    (params: P) =>
+      translate(i18n, params),
+}
+
+const platform = createPlatform([IntlStringResourceProvider])
+
+const plugin = platform.plugin('my-plugin', (_) => ({
+  i18n: {
+    X: _.i18n<Params>(),
+  },
+}))
+
+console.log(plugin.i18n.X.toString())
