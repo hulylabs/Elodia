@@ -8,20 +8,6 @@
 import type { ResourceId, Status } from './types'
 import { addCompList, iterateCompList, type CompList } from './util'
 
-type Success<T> = (result: T) => void
-type Failure = (status: Status) => void
-
-export interface Sink<T> {
-  success: Success<T>
-  failure?: Failure
-}
-
-export interface Out<O> {
-  pipe: <X extends Sink<O>>(input: Sink<O>) => X
-}
-
-export interface IO<I, O> extends Sink<I>, Out<O> {}
-
 type AnyIO = IO<any, any>
 
 interface SyncIterator<I, O> extends IO<I, O> {

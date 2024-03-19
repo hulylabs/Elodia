@@ -21,3 +21,9 @@ export function addCompList<T>(list: CompList<T>, item: T): CompList<T> {
   else list = item
   return list
 }
+
+export function mapObjects<T, U>(values: Record<string, T>, fn: (value: T, key: string) => U): Record<string, U> {
+  const result: Record<string, U> = {}
+  for (const key in values) result[key] = fn(values[key], key)
+  return result
+}

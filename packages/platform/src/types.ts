@@ -9,25 +9,21 @@ export type Primitive = string | number | boolean
 export type Params = Record<string, Primitive> | undefined
 
 /**
- * In the Huly Platform, a "ResourceId" is a unique identifier that represents a reference
+ * In the Huly Platform, a `ResourceId` is a unique identifier that represents a reference
  * to an entity such as an object, function, asset, or UI component, all of which are
  * contributed by plugins. A ResourceId is essentially a string like 'core:function:Optimize',
  * which can be utilized at runtime to retrieve its linked resource. This ID-centric approach
  * is foundational to the platform's modular and scalable architecture.
  *
- * The ResourceId<T> type provides strong typing for identifiers to ensure proper usage
+ * The `ResourceId<T>` type provides strong typing for identifiers to ensure proper usage
  * within the system, enforcing type safety and preventing misuse.
  *
- * Example:
- *
- * // Logging a ResourceId will output the string ID
- * console.log(core.function.Optimize);  // Output: 'core:function:Optimize'
  */
-
 export type ResourceId<T = any> = string & { __resource: T }
-export type IntlString<P extends Params = undefined> = ResourceId<P>
 
-// S T A T U S
+// M A N D A T O R Y  R E S O U R C E  T Y P E S
+
+export type IntlString<P extends Params = undefined> = string & { __params: P }
 
 export enum Result {
   OK,
@@ -35,8 +31,20 @@ export enum Result {
 }
 
 export interface Status<M extends Params = undefined, P extends M = M> {
-  readonly id: ResourceId<Status<M, P>>
+  readonly code: string // e.g. 'core:status:NotFound' -- this is a ResourceId
   readonly result: Result
   readonly params: P
   readonly message?: IntlString<M>
 }
+
+type Success<T> = (result: T) => void
+type Failure = (status: Status) => void
+
+export interface Sink<T> {
+  success: Success<T>
+  failure?: Failure
+}
+export interface Out<O> {
+  pipe: <X extends Sink<O>>(input: Sink<O>) => X
+}
+export interface IO<I, O> extends Sink<I>, Out<O> {}
