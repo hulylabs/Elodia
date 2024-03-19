@@ -124,8 +124,8 @@ const platform = createPlatform([IntlStringResourceProvider])
 
 const plugin = platform.plugin('my-plugin', (_) => ({
   i18n: {
-    X: _.i18n<Params>(),
+    X: _.i18n(),
   },
 }))
 
-console.log(plugin.i18n.X.toString())
+console.log(plugin.i18n.X({ a: 1 }))
