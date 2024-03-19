@@ -5,54 +5,22 @@
 // · platform/resources/i18n.ts
 //
 
-import type { Resource, ResourceType } from '../resource'
+import { createResourceType, type ResourceId } from '../resource'
 
-type IntlResourceTypeId = 'i18n'
+type IntlStringTypeId = 'i18n'
 
-export type Primitive = string | number | boolean
-export type Params = Record<string, Primitive>
+type Primitive = string | number | boolean
+type Params = Record<string, Primitive>
 
-export type IntlStringType<P extends Params> = ResourceType<IntlResourceTypeId, P>
-export type IntlString<P extends Params> = Resource<IntlResourceTypeId, P>
+type IntlString<P extends Params> = ResourceId<IntlStringTypeId, P>
 
-const translate = <P extends Params>(i18n: IntlString<P>, params: P): string => i18n.key + JSON.stringify(params)
+const translate = <P extends Params>(i18n: IntlString<P>, params: P) => JSON.stringify({ i18n, params })
 
-type IntlStringConstructor<P extends Params> = {
-  __resourceType_type: P // "virtual" field to save type information
-  constructor: (i18n: IntlString<P>) => (params: P) => string
+export const IntlStringProvider = {
+  type: createResourceType<Params, 'i18n'>('i18n'),
+  factory:
+    <P extends Params>() =>
+    (i18n: IntlString<P>) =>
+    (params: P) =>
+      translate(i18n, params),
 }
-
-const intlStringConstructorFactory = <P extends Params>(): IntlStringConstructor<P> => ({
-  __resourceType_type: {} as P, // "virtual" field to save type information
-  constructor: (i18n: IntlString<P>) => (params: P) => translate(i18n, params),
-})
-
-type IntlStringContructors = Record<string, IntlStringConstructor<any>>
-type IntlStringResources<C extends IntlStringContructors> = {
-  [K in keyof C]: C[K] extends IntlStringConstructor<infer P> ? IntlString<P> : never
-}
-
-const intlStringTypeProvider = {
-  helpers: {
-    i18n: intlStringConstructorFactory,
-  },
-}
-
-const i18n = intlStringTypeProvider.helpers.i18n
-
-const res = {
-  Test: i18n<{ x: number }>(),
-}
-
-const constructIt = <C extends IntlStringContructors>(x: C): IntlStringResources<C> =>
-  Object.keys(x).reduce(
-    (acc, key) => ({
-      ...acc,
-      [key]: {} as IntlString<{}>,
-    }),
-    {},
-  ) as IntlStringResources<C>
-
-const constr = constructIt(res)
-
-const test = constr.Test

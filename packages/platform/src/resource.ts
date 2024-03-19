@@ -57,18 +57,23 @@ const createResources = <P extends PluginResourceConstructors, T extends AnyReso
   pluginId: PluginId,
   pluginConstructors: P,
 ): InferredResources<P> =>
-  providers.reduce((acc, { type }) => {
-    acc[type.id] = mapObjects(pluginConstructors[type.id], (constructor, key) => constructor({ pluginId, type, key }))
-    return acc
-  }, {} as any)
+  providers.reduce(
+    (acc, { type }) =>
+      (acc[type.id] = mapObjects(pluginConstructors[type.id], (constructor, key) =>
+        constructor({ pluginId, type, key }),
+      )),
+    {} as any,
+  )
 
 // P L A T F O R M
+
+export type Platform = {}
 
 type InferredHelpers<P extends AnyResourceProvider[]> = {
   [K in keyof P]: P[K] extends ResourceProvider<infer I, any, infer F> ? { [key in I]: F } : never
 }[number]
 
-export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]) => {
+export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]): Platform => {
   const helper = Object.fromEntries(providers.map((provider) => [provider.type.id, provider.factory])) as {
     [K in keyof InferredHelpers<P>]: InferredHelpers<P>[K]
   }
@@ -80,33 +85,3 @@ export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P
     }),
   }
 }
-
-// E X A M P L E
-
-type IntlResourceTypeId = 'i18n'
-
-type Primitive = string | number | boolean
-type Params = Record<string, Primitive>
-
-type IntlString<P extends Params> = ResourceId<IntlResourceTypeId, P>
-
-const translate = <P extends Params>(i18n: IntlString<P>, params: P): string => i18n.key + JSON.stringify(params)
-
-const IntlStringResourceProvider = {
-  type: createResourceType<Params, 'i18n'>('i18n'),
-  factory:
-    <P extends Params>() =>
-    (i18n: IntlString<P>) =>
-    (params: P) =>
-      translate(i18n, params),
-}
-
-const platform = createPlatform([IntlStringResourceProvider])
-
-const plugin = platform.plugin('my-plugin', (_) => ({
-  i18n: {
-    X: _.i18n(),
-  },
-}))
-
-console.log(plugin.i18n.X({ a: 1 }))
