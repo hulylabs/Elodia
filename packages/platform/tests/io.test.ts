@@ -7,12 +7,20 @@
 
 import { expect, test } from 'bun:test'
 
-import type { ResourceId } from '../src'
-import { pipe, printDiagnostic, setId, success, type IO } from '../src/io'
-import { Platform } from '../src/platform'
+import { createIO } from '../src/io'
 import { expectIO } from './util'
 
-const { IO } = Platform
+const IO = createIO({
+  errorToStatus: (error: unknown): Status<any> => {
+    if (error instanceof PlatformError) return error.status
+    if (error instanceof Error) return platform.status.UnknownError.create({ message: error.message })
+    throw error // not our business
+  },
+
+  defaultFailureHandler: (status: Status): void => {
+    console.error('unhandled status: ', status)
+  },
+})
 
 test('expect', () => {
   const x = pipe(

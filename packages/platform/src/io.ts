@@ -8,6 +8,18 @@
 import type { ResourceId, Status } from './types'
 import { addCompList, iterateCompList, type CompList } from './util'
 
+type Success<T> = (result: T) => void
+type Failure = (status: Status) => void
+
+export interface Sink<T> {
+  success: Success<T>
+  failure?: Failure
+}
+export interface Out<O> {
+  pipe: <X extends Sink<O>>(input: Sink<O>) => X
+}
+export interface IO<I, O> extends Sink<I>, Out<O> {}
+
 type AnyIO = IO<any, any>
 
 interface SyncIterator<I, O> extends IO<I, O> {
@@ -143,7 +155,14 @@ export interface IOConfiguration {
   defaultFailureHandler: Failure
 }
 
-export function createIO(config: IOConfiguration) {
+interface IOModule {
+  syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O) => IO<I, O>
+  asyncIO: <I, O>(op: (value: I) => Promise<O>) => IO<I, O>
+  syncCode: <I, O>(code: () => Generator<IO<any, any>>) => SyncIterator<I, O>
+  asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>) => IO<I, O>
+}
+
+export function createIO(config: IOConfiguration): IOModule {
   class SyncIO<I, O> extends IOBase<I, O> {
     constructor(private readonly op: (value: I, pipe?: Out<O>) => O) {
       super()
@@ -240,15 +259,10 @@ export function createIO(config: IOConfiguration) {
     }
   }
 
-  const syncIO = <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op)
-  const asyncIO = <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op)
-  const syncCode = <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code)
-  const asyncCode = <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code)
-
   return {
-    syncIO,
-    asyncIO,
-    syncCode,
-    asyncCode,
+    syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op),
+    asyncIO: <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op),
+    syncCode: <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code),
+    asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code),
   }
 }

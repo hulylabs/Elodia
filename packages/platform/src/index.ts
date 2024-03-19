@@ -5,4 +5,6 @@
  * Huly Platform Effects & Resources
  */
 
+export { createIO } from './io'
 export { createPlatform } from './resource'
+

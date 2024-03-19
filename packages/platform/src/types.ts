@@ -36,15 +36,3 @@ export interface Status<M extends Params = undefined, P extends M = M> {
   readonly params: P
   readonly message?: IntlString<M>
 }
-
-type Success<T> = (result: T) => void
-type Failure = (status: Status) => void
-
-export interface Sink<T> {
-  success: Success<T>
-  failure?: Failure
-}
-export interface Out<O> {
-  pipe: <X extends Sink<O>>(input: Sink<O>) => X
-}
-export interface IO<I, O> extends Sink<I>, Out<O> {}
