@@ -7,33 +7,34 @@
 
 import { expect, test } from 'bun:test'
 
-import { $status } from '../src/platform'
-import { Resources } from '../src/resource'
-import { Result } from '../src/types'
+import { createPlatform, createResourceType, type ResourceId } from '../src/resource'
 
-test('Resources.plugin', () => {
-  const plugin = Resources.plugin('plugin', (_) => ({
-    class: {
-      Object: _<{ x: string }>(),
-      Class: _<string>(),
-      Doc: _(),
-    },
-    status: {
-      OK: _<string>((id) => id + '-OK'),
-      ERROR: _($status<{ text: string }>(Result.ERROR)),
-    },
-    const: {
-      N5: 5,
-    },
-  }))
+type XResourceTypeId = 'xresource'
 
-  expect(plugin.class.Object as string).toBe('plugin:class:Object')
-  expect(plugin.class.Class as string).toBe('plugin:class:Class')
-  expect(plugin.class.Doc as string).toBe('plugin:class:Doc')
-  expect(plugin.status.OK).toBe('plugin:status:OK-OK')
-  expect(plugin.const.N5).toBe(5)
+type Primitive = string | number | boolean
+type Params = Record<string, Primitive>
 
-  const status = plugin.status.ERROR.create({ text: 'hello' })
-  expect(status.id as string).toBe('plugin:status:ERROR')
-  expect(status.params.text).toBe('hello')
+type IntlString<P extends Params> = ResourceId<XResourceTypeId, P>
+
+const translate = <P extends Params>(i18n: IntlString<P>, params: P): string => i18n.key + '-' + JSON.stringify(params)
+
+const IntlStringResourceProvider = {
+  type: createResourceType<Params, XResourceTypeId>('xresource'),
+  factory:
+    <P extends Params>() =>
+    (i18n: IntlString<P>) =>
+    (params: P) =>
+      translate(i18n, params),
+}
+
+const platform = createPlatform([IntlStringResourceProvider])
+
+const plugin = platform.plugin('my-plugin', (_) => ({
+  xresource: {
+    Key1: _.xresource<{ year: number }>(),
+  },
+}))
+
+test('resource', () => {
+  expect(plugin.xresource.Key1({ year: 2024 })).toBe('Key1-{"year":2024}')
 })

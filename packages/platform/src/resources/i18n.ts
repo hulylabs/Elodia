@@ -17,7 +17,7 @@ type IntlString<P extends Params> = ResourceId<IntlStringTypeId, P>
 const translate = <P extends Params>(i18n: IntlString<P>, params: P) => JSON.stringify({ i18n, params })
 
 export const IntlStringProvider = {
-  type: createResourceType<Params, 'i18n'>('i18n'),
+  type: createResourceType<Params, IntlStringTypeId>('i18n'),
   factory:
     <P extends Params>() =>
     (i18n: IntlString<P>) =>

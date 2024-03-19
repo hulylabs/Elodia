@@ -57,23 +57,18 @@ const createResources = <P extends PluginResourceConstructors, T extends AnyReso
   pluginId: PluginId,
   pluginConstructors: P,
 ): InferredResources<P> =>
-  providers.reduce(
-    (acc, { type }) =>
-      (acc[type.id] = mapObjects(pluginConstructors[type.id], (constructor, key) =>
-        constructor({ pluginId, type, key }),
-      )),
-    {} as any,
-  )
+  providers.reduce((acc, { type }) => {
+    acc[type.id] = mapObjects(pluginConstructors[type.id], (constructor, key) => constructor({ pluginId, type, key }))
+    return acc
+  }, {} as any)
 
 // P L A T F O R M
-
-export type Platform = {}
 
 type InferredHelpers<P extends AnyResourceProvider[]> = {
   [K in keyof P]: P[K] extends ResourceProvider<infer I, any, infer F> ? { [key in I]: F } : never
 }[number]
 
-export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]): Platform => {
+export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]) => {
   const helper = Object.fromEntries(providers.map((provider) => [provider.type.id, provider.factory])) as {
     [K in keyof InferredHelpers<P>]: InferredHelpers<P>[K]
   }
