@@ -9,10 +9,6 @@ import { mapObjects } from './util'
 
 // R E S O U R C E  M A N A G E M E N T
 
-// Resourcee intialization pipeline:
-// * User calls (choose) resource constructor factory and creates a resource constructor
-// * Platform maps everything (all resource types in a bunch )
-
 export type PluginId = string & { __tag: 'plugin-id' }
 export type ResourceTypeId<I extends string> = I & { __tag: 'resource-type-id' }
 export type ResourceType<I extends string, T> = {
@@ -47,23 +43,23 @@ interface PluginResourceConstuctorsOfType<I extends string> {
   [type: string]: Record<string, ResourceConstructor<I, any, any>>
 }
 
-export const applyConstructors = <I extends string, T, C extends ResourceConstructors>(
-  pluginId: PluginId,
-  resourceType: ResourceType<I, T>,
-  constructors: C,
-): Resources<C> => mapObjects(constructors, (constructor, key) => constructor({ pluginId, resourceType, key })) as any
+// export const applyConstructors = <I extends string, T, C extends ResourceConstructors>(
+//   pluginId: PluginId,
+//   resourceType: ResourceType<I, T>,
+//   constructors: C,
+// ): Resources<C> => mapObjects(constructors, (constructor, key) => constructor({ pluginId, resourceType, key })) as any
 
-export const extractAndApplyConstructorsOfType = <I extends string, T, P extends PluginResourceConstructors>(
-  pluginId: PluginId,
-  resourceType: ResourceType<I, T>,
-  pluginConstructors: P,
-): PluginResourceConstuctorsOfType<I> =>
-  mapObjects(pluginConstructors[resourceType.id], (constructor, key) => constructor({ pluginId, resourceType, key }))
+// export const extractAndApplyConstructorsOfType = <I extends string, T, P extends PluginResourceConstructors>(
+//   pluginId: PluginId,
+//   resourceType: ResourceType<I, T>,
+//   pluginConstructors: P,
+// ): PluginResourceConstuctorsOfType<I> =>
+//   mapObjects(pluginConstructors[resourceType.id], (constructor, key) => constructor({ pluginId, resourceType, key }))
 
-export interface ResourceProvider<I extends string, T, C extends ResourceConstructors> {
-  resourceType: ResourceType<I, T>
-  constructors: C
-}
+// export interface ResourceProvider<I extends string, T, C extends ResourceConstructors> {
+//   resourceType: ResourceType<I, T>
+//   constructors: C
+// }
 
 type InferredResource<R extends ResourceConstructor<any, any, any>> = ReturnType<R>
 
