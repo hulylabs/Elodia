@@ -68,13 +68,6 @@ interface Platform<A extends object, P extends ResourceProviders> {
   ) => InferredResources<T> & { id: PluginId }
 }
 
-function buildFactories<P extends Record<string, AnyResourceProvider>>(providers: P): Factories<P> {
-  return Object.keys(providers).reduce((acc, typeId) => {
-    acc[typeId as keyof Factories<P>] = providers[typeId].factory
-    return acc
-  }, {} as Factories<P>)
-}
-
 export const createPlatform = <A extends object, P extends Record<string, AnyResourceProvider> = {}>(): Platform<
   A,
   P
@@ -99,7 +92,7 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
       pluginId: PluginId,
       resources: (_: Factories<P>) => T,
     ): InferredResources<T> & { id: PluginId } => {
-      const constructors = resources(buildFactories(providers))
+      const constructors = resources(mapObjects(providers, ({ factory }) => factory) as Factories<P>)
       return {
         ...mapObjects(providers, ({ type }) =>
           mapObjects(constructors[type.id], (constructor, key) => constructor({ pluginId, type, key })),
