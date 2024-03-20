@@ -5,11 +5,12 @@
 // · platform/io.ts
 //
 
-import type { ResourceId, Status } from './types'
-import { addCompList, iterateCompList, type CompList } from './util'
+import type { Status } from '../resources/status'
+import { addCompList, iterateCompList, type CompList } from '../util'
+import type { ResourceId } from './resource'
 
 type Success<T> = (result: T) => void
-type Failure = (status: Status) => void
+type Failure = (status: Status<any>) => void
 
 export interface Sink<T> {
   success: Success<T>

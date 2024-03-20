@@ -11,13 +11,13 @@ export type Params = Record<string, Primitive> | undefined
 /**
  * In the Huly Platform, a `ResourceId` is a unique identifier that represents a reference
  * to an entity such as an object, function, asset, or UI component, all of which are
- * contributed by plugins. A ResourceId is essentially a string like 'core:function:Optimize',
- * which can be utilized at runtime to retrieve its linked resource. This ID-centric approach
- * is foundational to the platform's modular and scalable architecture.
+ * contributed by plugins. A ResourceId can be serialized in string form such as
+ * 'core:function:Optimize', which can be utilized at runtime to retrieve its linked
+ * resource. This ID-centric approach is foundational to the platform's modular and
+ * scalable architecture.
  *
  * The `ResourceId<T>` type provides strong typing for identifiers to ensure proper usage
  * within the system, enforcing type safety and preventing misuse.
- *
  */
 export type ResourceId<T = any> = string & { __resource: T }
 

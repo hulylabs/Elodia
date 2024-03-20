@@ -5,7 +5,7 @@
 // · platform/resource.ts
 //
 
-import { mapObjects } from './util'
+import { mapObjects } from '../util'
 
 // R E S O U R C E  M A N A G E M E N T
 
@@ -36,7 +36,7 @@ export interface ResourceProvider<I extends string, T, F extends ResourceConstru
   type: ResourceType<I, T>
   factory: F
 }
-type AnyResourceProvider = ResourceProvider<string, any, any>
+export type AnyResourceProvider = ResourceProvider<string, any, any>
 
 // P L U G I N
 
@@ -52,7 +52,7 @@ type InferredResources<P extends PluginResourceConstructors> = {
   }
 }
 
-const createResources = <P extends PluginResourceConstructors, T extends AnyResourceProvider[]>(
+const createPluginResources = <P extends PluginResourceConstructors, T extends AnyResourceProvider[]>(
   providers: T,
   pluginId: PluginId,
   pluginConstructors: P,
@@ -68,15 +68,13 @@ type InferredHelpers<P extends AnyResourceProvider[]> = {
   [K in keyof P]: P[K] extends ResourceProvider<infer I, any, infer F> ? { [key in I]: F } : never
 }[number]
 
-export const createPlatform = <P extends AnyResourceProvider[]>(providers: [...P]) => {
+export const createResource = <P extends AnyResourceProvider[]>(providers: [...P]) => {
   const helper = Object.fromEntries(providers.map((provider) => [provider.type.id, provider.factory])) as {
     [K in keyof InferredHelpers<P>]: InferredHelpers<P>[K]
   }
 
-  return {
-    plugin: <T extends PluginResourceConstructors>(name: string, template: (_: typeof helper) => T) => ({
-      ...createResources<T, P>(providers, name as PluginId, template(helper)),
-      id: name as PluginId,
-    }),
-  }
+  return <T extends PluginResourceConstructors>(name: string, template: (_: typeof helper) => T) => ({
+    ...createPluginResources<T, P>(providers, name as PluginId, template(helper)),
+    id: name as PluginId,
+  })
 }
