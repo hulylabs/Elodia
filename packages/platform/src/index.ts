@@ -27,8 +27,7 @@ export const createResourceType = <T, I extends string>(id: I): ResourceType<I, 
 // P R O V I D E R
 
 type ResourceConstructor<I extends string, T, R> = (resource: ResourceId<I, T>) => R
-type ConsructorFactory<I extends string, T, R> = (...args: any[]) => ResourceConstructor<I, T, R>
-export interface ResourceProvider<I extends string, T, R, F extends ConsructorFactory<I, T, R>> {
+export interface ResourceProvider<I extends string, T, R, F extends (...args: any[]) => ResourceConstructor<I, T, R>> {
   type: ResourceType<I, T>
   factory: F
 }
@@ -72,10 +71,10 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
   A,
   P
 > => {
-  let apis: A = {} as A
-  let providers: P = {} as P
+  let apis = {} as A
+  let providers = {} as P
 
-  const platform: Platform<A, P> = {
+  const platform = {
     loadModule: <MA extends object>(module: API<MA>): Platform<A & MA, P> => {
       apis = { ...apis, ...module.api() }
       return platform as Platform<A & MA, P>
@@ -84,7 +83,7 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
     addResourceProvider: <MP extends AnyResourceProvider>(
       resourceProvider: MP,
     ): Platform<A, P & { [K in MP['type']['id']]: MP }> => {
-      providers = { ...providers, [resourceProvider.type.id]: resourceProvider }
+      ;(providers as any)[resourceProvider.type.id] = resourceProvider
       return platform as Platform<A, P & { [K in MP['type']['id']]: MP }>
     },
 
@@ -101,7 +100,6 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
       } as any
     },
   }
-
   return platform
 }
 
