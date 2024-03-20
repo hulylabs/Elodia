@@ -61,8 +61,8 @@ interface Platform<A extends object, P extends ResourceProviders> {
     resourceProvider: MP,
   ) => Platform<A, P & { [K in MP['type']['id']]: MP }>
 
-  createResource: <T extends ResourceConstructors>(
-    name: PluginId,
+  plugin: <T extends ResourceConstructors>(
+    name: string,
     resources: (_: Factories<P>) => T,
   ) => InferredResources<T> & { id: PluginId }
 }
@@ -87,10 +87,11 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
       return platform as Platform<A, P & { [K in MP['type']['id']]: MP }>
     },
 
-    createResource: <T extends ResourceConstructors>(
-      pluginId: PluginId,
+    plugin: <T extends ResourceConstructors>(
+      name: string,
       resources: (_: Factories<P>) => T,
     ): InferredResources<T> & { id: PluginId } => {
+      const pluginId = name as PluginId
       const constructors = resources(mapObjects(providers, ({ factory }) => factory) as Factories<P>)
       return {
         ...mapObjects(providers, ({ type }) =>
