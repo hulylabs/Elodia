@@ -7,7 +7,9 @@
 
 import { expect, test } from 'bun:test'
 
-import { createPlatform, createResourceType, type ResourceId } from '../src/resource'
+import { createPlatform } from '../src/'
+import { createResourceType, type ResourceId } from '../src/modules/resource'
+import { configuration } from './util'
 
 type XResourceTypeId = 'xresource'
 
@@ -27,7 +29,7 @@ const IntlStringResourceProvider = {
       translate(i18n, params),
 }
 
-const platform = createPlatform([IntlStringResourceProvider])
+const platform = createPlatform(configuration, [IntlStringResourceProvider])
 
 const plugin = platform.plugin('my-plugin', (_) => ({
   xresource: {
