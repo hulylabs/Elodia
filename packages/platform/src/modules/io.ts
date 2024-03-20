@@ -7,10 +7,9 @@
 
 import type { Status } from '../resources/status'
 import { addCompList, iterateCompList, type CompList } from '../util'
-import type { ResourceId } from './resource'
 
 type Success<T> = (result: T) => void
-type Failure = (status: Status<any>) => void
+type Failure = (status: Status) => void
 
 export interface Sink<T> {
   success: Success<T>
@@ -36,7 +35,7 @@ enum State {
 abstract class IODiagnostic<I, O> implements IO<I, O> {
   protected static sequence = 0
 
-  id = `io-${(IODiagnostic.sequence++).toString(32)}` as ResourceId<IO<I, O>>
+  id = `io-${(IODiagnostic.sequence++).toString(32)}`
 
   abstract success(input: I): void
   abstract failure(status: Status): void
@@ -103,7 +102,7 @@ class SuccessIO<T> extends IOBase<T, T> {
 export const success = <T,>(result: T): IO<T, T> => new SuccessIO(result)
 
 class PipeIO<I, O> extends IODiagnostic<I, O> {
-  id = `io-pipe-${(IODiagnostic.sequence++).toString(32)}` as ResourceId<IO<any, any>>
+  id = `io-pipe-${(IODiagnostic.sequence++).toString(32)}`
 
   constructor(
     private readonly first: IO<I, O>,
@@ -142,10 +141,10 @@ export function pipe(...ios: IO<any, any>[]): IO<any, any> {
   return new PipeIO(first, last)
 }
 
-export const setId = <I, O>(io: IO<I, O>, id: ResourceId<IO<I, O>>) => {
+export const setId = <I, O>(io: IO<I, O>, id: string) => {
   ;(io as any).id = id
 }
-export const getId = <I, O>(io: IO<I, O>): ResourceId<IO<I, O>> | undefined => (io as any).id
+export const getId = <I, O>(io: IO<I, O>): string | undefined => (io as any).id
 
 export const printDiagnostic = <I, O>(io: IO<I, O>) => {
   ;(io as IOBase<I, O>).printDiagnostic()
@@ -156,14 +155,14 @@ export interface IOConfiguration {
   defaultFailureHandler: Failure
 }
 
-interface IOModule {
-  syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O) => IO<I, O>
-  asyncIO: <I, O>(op: (value: I) => Promise<O>) => IO<I, O>
-  syncCode: <I, O>(code: () => Generator<IO<any, any>>) => SyncIterator<I, O>
-  asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>) => IO<I, O>
-}
+// interface IOModule {
+//   syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O) => IO<I, O>
+//   asyncIO: <I, O>(op: (value: I) => Promise<O>) => IO<I, O>
+//   syncCode: <I, O>(code: () => Generator<IO<any, any>>) => SyncIterator<I, O>
+//   asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>) => IO<I, O>
+// }
 
-export function createIO(config: IOConfiguration): IOModule {
+export function createIO(config: IOConfiguration) {
   class SyncIO<I, O> extends IOBase<I, O> {
     constructor(private readonly op: (value: I, pipe?: Out<O>) => O) {
       super()
@@ -183,42 +182,6 @@ export function createIO(config: IOConfiguration): IOModule {
     }
   }
 
-  class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<I, O> {
-    constructor(private readonly code: () => Generator<IO<any, any>, O>) {
-      super()
-    }
-
-    protected loop(io: IO<any, any>, i: Generator<IO<any, any>, any>, input: any) {
-      io.pipe({
-        success: (value: any) => {
-          const next = i.next(value)
-          if (!next.done) this.loop(next.value, i, value)
-          else this.setResult(value)
-        },
-        failure: (status: Status) => {
-          this.setStatus(status)
-        },
-      })
-      io.success(input)
-    }
-
-    success(input: I): Out<O> {
-      const i = this.code()
-      const next = i.next()
-      if (!next.done) this.loop(next.value, i, input)
-      return this
-    }
-
-    [Symbol.iterator](): Iterator<AnyIO, O> {
-      const i = this.code()
-      return {
-        next: () => {
-          return i.next()
-        },
-      }
-    }
-  }
-
   class AsyncIO<I, O> extends IOBase<I, O> {
     constructor(private readonly op: (value: I) => Promise<O>) {
       super()
@@ -229,41 +192,10 @@ export function createIO(config: IOConfiguration): IOModule {
     }
   }
 
-  class AsyncCode<I, O> extends IOBase<I, O> {
-    constructor(private readonly code: (x: I) => AsyncGenerator<IO<any, any>, O>) {
-      super()
-    }
-    protected loop(io: IO<any, any>, i: AsyncGenerator<IO<any, any>>, input: any) {
-      io.pipe({
-        success: (value: any) => {
-          const loop = this.loop.bind(this)
-          const notifySuccess = this.setResult.bind(this)
-          const next = i.next(value)
-          next.then((next) => {
-            if (!next.done) loop(next.value, i, value)
-            else notifySuccess(value)
-          })
-        },
-        failure: () => {},
-      })
-      io.success(input)
-    }
-
-    success(input: I): Out<O> {
-      const i = this.code(input)
-      const loop = this.loop.bind(this)
-      const next = i.next()
-      next.then((next) => {
-        if (!next.done) loop(next.value, i, input)
-      })
-      return this
-    }
-  }
-
   return {
     syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op),
     asyncIO: <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op),
-    syncCode: <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code),
-    asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code),
+    // syncCode: <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code),
+    // asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code),
   }
 }

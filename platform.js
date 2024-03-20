@@ -46,44 +46,6 @@ function createIO(config) {
     }
   }
 
-  class SyncCode extends IOBase {
-    code;
-    constructor(code) {
-      super();
-      this.code = code;
-    }
-    loop(io, i, input) {
-      io.pipe({
-        success: (value) => {
-          const next = i.next(value);
-          if (!next.done)
-            this.loop(next.value, i, value);
-          else
-            this.setResult(value);
-        },
-        failure: (status) => {
-          this.setStatus(status);
-        }
-      });
-      io.success(input);
-    }
-    success(input) {
-      const i = this.code();
-      const next = i.next();
-      if (!next.done)
-        this.loop(next.value, i, input);
-      return this;
-    }
-    [Symbol.iterator]() {
-      const i = this.code();
-      return {
-        next: () => {
-          return i.next();
-        }
-      };
-    }
-  }
-
   class AsyncIO extends IOBase {
     op;
     constructor(op) {
@@ -95,47 +57,9 @@ function createIO(config) {
       return this;
     }
   }
-
-  class AsyncCode extends IOBase {
-    code;
-    constructor(code) {
-      super();
-      this.code = code;
-    }
-    loop(io, i, input) {
-      io.pipe({
-        success: (value) => {
-          const loop = this.loop.bind(this);
-          const notifySuccess = this.setResult.bind(this);
-          const next = i.next(value);
-          next.then((next2) => {
-            if (!next2.done)
-              loop(next2.value, i, value);
-            else
-              notifySuccess(value);
-          });
-        },
-        failure: () => {
-        }
-      });
-      io.success(input);
-    }
-    success(input) {
-      const i = this.code(input);
-      const loop = this.loop.bind(this);
-      const next = i.next();
-      next.then((next2) => {
-        if (!next2.done)
-          loop(next2.value, i, input);
-      });
-      return this;
-    }
-  }
   return {
     syncIO: (op) => new SyncIO(op),
-    asyncIO: (op) => new AsyncIO(op),
-    syncCode: (code) => new SyncCode(code),
-    asyncCode: (code) => new AsyncCode(code)
+    asyncIO: (op) => new AsyncIO(op)
   };
 }
 var State;

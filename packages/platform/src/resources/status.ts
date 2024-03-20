@@ -17,7 +17,7 @@ export enum Result {
   ERROR,
 }
 
-export interface Status<M extends Params, P extends M = M> {
+export interface Status<M extends Params = any, P extends M = M> {
   readonly id: StatusId<P>
   readonly result: Result
   readonly params: P
