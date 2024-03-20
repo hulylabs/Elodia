@@ -9,12 +9,12 @@ import { createIO, type IOConfiguration } from './modules/io'
 import { createResource, type AnyResourceProvider } from './modules/resource'
 
 import { i18nProvider } from './resources/i18n'
-import { statusProvider, type Params, type Status } from './resources/status'
+import { statusProvider, type Status } from './resources/status'
 
-export class PlatformError<M extends Params, P extends M> extends Error {
-  readonly status: Status<M, P>
+export class PlatformError extends Error {
+  readonly status: Status<any>
 
-  constructor(status: Status<M, P>) {
+  constructor(status: Status<any>) {
     super()
     this.status = status
   }

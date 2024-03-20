@@ -117,30 +117,6 @@ class IOBase extends IODiagnostic {
     }
   }
 }
-class PipeIO extends IODiagnostic {
-  first;
-  last;
-  id = `io-pipe-${(IODiagnostic.sequence++).toString(32)}`;
-  constructor(first, last) {
-    super();
-    this.first = first;
-    this.last = last;
-  }
-  success(input) {
-    this.first.success(input);
-  }
-  failure(status) {
-    this.first.failure?.(status);
-  }
-  pipe(sink) {
-    this.last.pipe(sink);
-    return sink;
-  }
-  printDiagnostic() {
-    console.log(`IO: ${this.id} (pipe)`);
-    this.first.printDiagnostic(1);
-  }
-}
 
 // packages/platform/src/modules/resource.ts
 var createResourceType = (id) => ({ id });

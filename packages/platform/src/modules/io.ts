@@ -101,35 +101,6 @@ class SuccessIO<T> extends IOBase<T, T> {
 
 export const success = <T,>(result: T): IO<T, T> => new SuccessIO(result)
 
-class PipeIO<I, O> extends IODiagnostic<I, O> {
-  id = `io-pipe-${(IODiagnostic.sequence++).toString(32)}`
-
-  constructor(
-    private readonly first: IO<I, O>,
-    private readonly last: IO<I, O>,
-  ) {
-    super()
-  }
-
-  success(input: I): void {
-    this.first.success(input)
-  }
-
-  failure(status: Status): void {
-    this.first.failure?.(status)
-  }
-
-  pipe<X extends Sink<O>>(sink: Sink<O>): X {
-    this.last.pipe(sink)
-    return sink as X
-  }
-
-  printDiagnostic() {
-    console.log(`IO: ${this.id} (pipe)`)
-    ;(this.first as IODiagnostic<any, any>).printDiagnostic(1)
-  }
-}
-
 export function pipe<A, B>(io: IO<A, B>): IO<A, B>
 export function pipe<A, B, C>(io1: IO<A, B>, io2: IO<B, C>): IO<A, C>
 export function pipe<A, B, C, D>(io1: IO<A, B>, io2: IO<B, C>, io3: IO<C, D>): IO<A, D>
@@ -138,7 +109,15 @@ export function pipe<A, B, C, D, E>(io1: IO<A, B>, io2: IO<B, C>, io3: IO<C, D>,
 export function pipe(...ios: IO<any, any>[]): IO<any, any> {
   const first = ios[0]
   const last = ios.reduce((io, current) => io.pipe(current))
-  return new PipeIO(first, last)
+  // return new PipeIO(first, last)
+  return {
+    success: (input) => first.success(input),
+    failure: (status: Status) => first.failure?.(status),
+    pipe<X extends Sink<any>>(sink: Sink<any>): X {
+      last.pipe(sink)
+      return sink as X
+    },
+  }
 }
 
 export const setId = <I, O>(io: IO<I, O>, id: string) => {
