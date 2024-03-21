@@ -7,21 +7,22 @@
 
 import { expect, test } from 'bun:test'
 
-import { createPlatform } from '../src/'
-import { createResourceType, type ResourceId, type ResourceProvider } from '../src/modules/resource'
+import { createPlatform, createResourceType, type ResourceId } from '../src/'
 
-type XResourceTypeId = 'xresource'
+type XResourceTypeId = 'xtest'
 
 type Primitive = string | number | boolean
 type Params = Record<string, Primitive>
 
 type IntlString<P extends Params> = ResourceId<XResourceTypeId, P>
 
+const xtest = createResourceType<XResourceTypeId, Params>('xtest')
+
 const translate = <P extends Params>(i18n: IntlString<P>, params: P): string =>
   i18n.pluginId + '-' + i18n.type.id + '-' + i18n.key + '-' + JSON.stringify(params)
 
-const IntlStringResourceProvider: ResourceProvider<XResourceTypeId, Params, any> = {
-  type: createResourceType<Params, XResourceTypeId>('xresource'),
+const resourceProvider = {
+  type: xtest,
   factory:
     <P extends Params>() =>
     (i18n: IntlString<P>) =>
@@ -29,14 +30,19 @@ const IntlStringResourceProvider: ResourceProvider<XResourceTypeId, Params, any>
       translate(i18n, params),
 }
 
-const platform = createPlatform().addResourceProvider(IntlStringResourceProvider)
+const platform = createPlatform().loadModule({
+  api: {},
+  resources: {
+    xtest: resourceProvider,
+  },
+})
 
-const plugin = platform.plugin('myplugin', (_) => ({
-  xresource: {
-    Key1: _.xresource<{ year: number }>(),
+const plugin = platform.plugin('myplugin', (factories) => ({
+  xtest: {
+    Key1: factories.xtest<{ year: 2024 }>(),
   },
 }))
 
 test('resource', () => {
-  expect(plugin.xresource.Key1({ year: 2024 })).toBe('myplugin-xresource-Key1-{"year":2024}')
+  expect(plugin.xtest.Key1({ year: 2024 })).toBe('myplugin-xtest-Key1-{"year":2024}')
 })

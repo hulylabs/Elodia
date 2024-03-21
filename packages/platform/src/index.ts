@@ -22,48 +22,45 @@ export type ResourceId<I extends string, T> = {
   key: string
 }
 
-export const createResourceType = <T, I extends string>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
+export const createResourceType = <I extends string, T>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
 
 // P R O V I D E R
 
-type ResourceConstructor<I extends string, T, R> = (resource: ResourceId<I, T>) => R
-export interface ResourceProvider<I extends string, T, R, F extends (...args: any[]) => ResourceConstructor<I, T, R>> {
+type ResourceConstructor<I extends string, T> = (resource: ResourceId<I, T>) => any
+export interface ResourceProvider<I extends string, T, F extends (...args: any[]) => ResourceConstructor<I, T>> {
   type: ResourceType<I, T>
   factory: F
 }
-type AnyResourceProvider = ResourceProvider<string, any, any, any>
+type AnyResourceProvider = ResourceProvider<string, any, (...args: any[]) => any>
 
 // P L A T F O R M
 
 interface ResourceConstructors {
-  [resourceTypeId: string]: { [key: string]: ResourceConstructor<string, any, any> }
+  [type: string]: { [key: string]: ResourceConstructor<any, any> }
 }
 
 type InferredResources<T extends ResourceConstructors> = {
   [Type in keyof T]: {
-    [Key in keyof T[Type]]: T[Type][Key] extends ResourceConstructor<string, any, infer R> ? R : never
+    [Key in keyof T[Type]]: ReturnType<T[Type][Key]> // extends ResourceConstructor<string, any, infer R> ? R : never
   }
 }
 
 type Factories<P> = {
-  [K in keyof P]: P[K] extends ResourceProvider<string, any, any, infer F> ? F : never
+  [K in keyof P]: P[K] extends ResourceProvider<any, any, infer F> ? F : never
 }
 type ResourceProviders = Record<string, AnyResourceProvider>
 
-interface API<A extends object> {
-  api: () => A
+export interface Module<A extends object, MP extends ResourceProviders> {
+  api: A
+  resources: MP
 }
 
 interface Platform<A extends object, P extends ResourceProviders> {
-  loadModule: <MA extends object>(module: API<MA>) => Platform<A & MA, P>
+  loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
 
-  addResourceProvider: <MP extends AnyResourceProvider>(
-    resourceProvider: MP,
-  ) => Platform<A, P & { [K in MP['type']['id']]: MP }>
-
-  plugin: <T extends ResourceConstructors>(
+  plugin: <T extends ResourceConstructors, F extends Factories<P>>(
     name: string,
-    resources: (_: Factories<P>) => T,
+    resources: (factories: F) => T,
   ) => InferredResources<T> & { id: PluginId }
 }
 
@@ -75,21 +72,15 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
   let providers = {} as P
 
   const platform = {
-    loadModule: <MA extends object>(module: API<MA>): Platform<A & MA, P> => {
-      apis = { ...apis, ...module.api() }
-      return platform as Platform<A & MA, P>
-    },
-
-    addResourceProvider: <MP extends AnyResourceProvider>(
-      resourceProvider: MP,
-    ): Platform<A, P & { [K in MP['type']['id']]: MP }> => {
-      ;(providers as any)[resourceProvider.type.id] = resourceProvider
-      return platform as Platform<A, P & { [K in MP['type']['id']]: MP }>
+    loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
+      apis = { ...apis, ...module.api }
+      providers = { ...providers, ...module.resources }
+      return platform as Platform<A & MA, P & MP>
     },
 
     plugin: <T extends ResourceConstructors>(
       name: string,
-      resources: (_: Factories<P>) => T,
+      resources: (factories: Factories<P>) => T,
     ): InferredResources<T> & { id: PluginId } => {
       const pluginId = name as PluginId
       const constructors = resources(mapObjects(providers, ({ factory }) => factory) as Factories<P>)
@@ -101,7 +92,8 @@ export const createPlatform = <A extends object, P extends Record<string, AnyRes
       } as any
     },
   }
-  return platform
+
+  return platform as Platform<A, P>
 }
 
 // S T A T U S
@@ -122,7 +114,7 @@ export interface Status<P extends Params = any> {
 }
 
 export const statusProvider = {
-  type: createResourceType<Params, StatusTypeId>('status'),
+  type: createResourceType<StatusTypeId, Params>('status'),
   factory:
     <P extends Params>(result: Result) =>
     (id: StatusId<P>) =>
@@ -137,3 +129,37 @@ export class PlatformError extends Error {
     this.status = status
   }
 }
+
+// E X A M P L E
+
+type XResourceTypeId = 'xtest'
+type IntlString<P extends Params> = ResourceId<XResourceTypeId, P>
+
+const xtest = createResourceType<XResourceTypeId, Params>('xtest')
+
+const translate = <P extends Params>(i18n: IntlString<P>, params: P): string =>
+  i18n.pluginId + '-' + i18n.type.id + '-' + i18n.key + '-' + JSON.stringify(params)
+
+const resourceProvider = {
+  type: xtest,
+  factory:
+    <P extends Params>() =>
+    (i18n: IntlString<P>) =>
+    (params: P) =>
+      translate(i18n, params),
+}
+
+const platform = createPlatform().loadModule({
+  api: {},
+  resources: {
+    xtest: resourceProvider,
+  },
+})
+
+const plugin = platform.plugin('myplugin', (factories) => ({
+  xtest: {
+    Key1: factories.xtest<{ y: number }>(),
+  },
+}))
+
+console.log(plugin.xtest.Key1)
