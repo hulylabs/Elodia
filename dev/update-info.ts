@@ -110,6 +110,23 @@ async function processPackage(filePath: string): Promise<void> {
   for await (const file of glob.scan(packageDir)) {
     await processSource(packageFull, packageDir, file)
   }
+
+  if (packageFull === '@huly/platform') {
+    console.log(`updating platform-info.json'...`)
+
+    const info = projectInfo['package.json']
+    const platformInfo = {
+      name: packageFull,
+      version: newVersion,
+      description,
+      license: info.license,
+      author: info.author,
+      homepage: info.homepage,
+      contributors: info.contributors,
+    }
+
+    await Bun.write(path.join(packageDir, 'platform-info.json'), JSON.stringify(platformInfo))
+  }
 }
 
 async function main() {
@@ -123,20 +140,6 @@ async function main() {
       await processPackage(file)
     }
   }
-
-  console.log(`updating platform-info.json'...`)
-
-  const info = projectInfo['package.json']
-  const platformInfo = {
-    version: newVersion,
-    description,
-    license: info.license,
-    author: info.author,
-    homepage: info.homepage,
-    contributors: info.contributors,
-  }
-
-  await Bun.write('./packages/platform', JSON.stringify(platformInfo))
 }
 
 main()
