@@ -7,9 +7,7 @@
 
 import { expect } from 'bun:test'
 
-import { PlatformError } from '../src/'
 import type { Out } from '../src/modules/io'
-import { Result, type Status, type StatusId } from '../src/resources/status'
 
 export const expectIO = <T,>(io: Out<T>, validate: (value: T) => void): void => {
   io.pipe({

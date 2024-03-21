@@ -8,7 +8,7 @@
 import { expect, test } from 'bun:test'
 
 import { PlatformError, Result, type Status, type StatusId } from '../src/'
-import { createIO, pipe, success, type IOConfiguration } from '../src/modules/io'
+import { createIO, type IOConfiguration } from '../src/modules/io'
 import { expectIO } from './util'
 
 export const configuration: IOConfiguration = {
@@ -27,13 +27,11 @@ export const configuration: IOConfiguration = {
   },
 }
 
-const IO = createIO(configuration)
-
-IO.api.syncIO
+const IO = createIO(configuration).api
 
 test('expect', () => {
-  const x = pipe(
-    success(111),
+  const x = IO.pipe(
+    IO.success(111),
     IO.syncIO((x) => x * 3),
   )
   expectIO(x, (value) => expect(value).toBe(333))
