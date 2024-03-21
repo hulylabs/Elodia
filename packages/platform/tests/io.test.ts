@@ -11,7 +11,7 @@ import { createIO, type IOConfiguration } from '../src/io'
 import { type Status } from '../src/status'
 import { expectIO } from './util'
 
-export const configuration: IOConfiguration = {
+const configuration: IOConfiguration = {
   errorToStatus: (error: unknown): Status<any> => {
     throw error // not our business
   },

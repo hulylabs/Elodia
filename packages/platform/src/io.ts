@@ -115,13 +115,14 @@ export function createIO(config: IOConfiguration) {
   // I O  R E S O U R C E
 
   type IOTypeId = typeof io
-  type IOId<I, O, T extends IO<I, O>> = ResourceId<IOTypeId, T>
+  type IOId<I, O> = ResourceId<IOTypeId, IO<I, O>>
 
   const createResourceProvider = () => ({
     type: createResourceType<IOTypeId, IO<any, any>>(io),
     factory:
-      <I, O, T extends IO<I, O>>(io: T) =>
-      (_: IOId<I, O, T>) =>
+      <I, O>(io: IO<I, O>) =>
+      (_: IOId<I, O>) =>
+      (): IO<I, O> =>
         io,
   })
 

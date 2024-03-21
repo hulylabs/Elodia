@@ -7,14 +7,7 @@
 
 import { expect, test } from 'bun:test'
 
-import {
-  createLocale,
-  createPlatform,
-  createResourceProvider,
-  createResourceType,
-  type Platform,
-  type ResourceId,
-} from '../src/platform'
+import { createLocale, createPlatform, createResourceType, type ResourceId } from '../src/platform'
 
 const xtest = 'xtest'
 

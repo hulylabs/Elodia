@@ -69,6 +69,7 @@ interface Module<A extends object, MP extends ResourceProviders> {
 type API = Record<string, Function>
 
 export interface Platform<A extends API, P extends ResourceProviders> {
+  api: () => A
   locale: Locale
   loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
   plugin: <T extends ResourceConstructors, F extends Factories<P>>(
@@ -92,6 +93,8 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
   let providers = {} as P
 
   const platform: Platform<A, P> = {
+    api: () => apis,
+
     locale,
 
     loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {

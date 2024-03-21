@@ -7,7 +7,7 @@
 
 import { expect } from 'bun:test'
 
-import type { Out } from '../src/modules/io'
+import type { Out } from '../src/io'
 
 export const expectIO = <T,>(io: Out<T>, validate: (value: T) => void): void => {
   io.pipe({
