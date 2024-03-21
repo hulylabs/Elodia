@@ -22,7 +22,7 @@ async function processPackage(filePath: string): Promise<void> {
     const fileContent = await Bun.file(filePath).text()
     const packageData = JSON.parse(fileContent)
 
-    console.log(`processing '${packageData.name}' version '${packageData.version}'...`)
+    console.log(`processing '${packageData.name}'...`)
 
     const newPackageData = {
       ...packageData,
@@ -42,7 +42,7 @@ async function main() {
 
   const locations: string[] = packageJson.workspaces
   for (const location of locations) {
-    console.log(`scanning ${location}...`)
+    console.log(`scanning '${location}'...`)
     const glob = new Glob(`${location}/package.json`)
     for await (const file of glob.scan('.')) {
       await processPackage(file)
