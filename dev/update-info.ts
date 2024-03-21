@@ -1,14 +1,12 @@
 import packageJson from '../package.json'
 import projectInfo from '../project-info.json'
 
-const copyrightTs = `
-//
+const copyrightTs = `//
 // © {{year}} {{company}}. All Rights Reserved.
 // Licensed under the {{full_license}} (SPDX: {{license}}).
 //
 // · {{filename}}
 //
-
 
 `
 
@@ -65,7 +63,7 @@ async function processSource(packageDir: string, filePath: string): Promise<void
     filename,
   }
   const newComment = replacePlaceholders(copyrightTs, placeholderValues as any)
-  const newContent = newComment + '\n' + noCommentContent
+  const newContent = newComment + noCommentContent
 
   await Bun.write(fullPath, newContent)
 }
