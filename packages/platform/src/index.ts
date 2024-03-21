@@ -18,18 +18,18 @@ export const platform = (locale: Locale) => {
 
   out(`booting platform version ${version} (https://huly.dev)`)
 
-  const platformStatusPlugin = 'platform/status'
-  out(`instantiating \`${platformStatusPlugin}\` plugin...`)
+  const modStatus = 'platform/status'
+  out(`loading \`${modStatus}\` module...`)
 
   const bootStatus = createPlatform(locale).loadModule(createStatusPlugin())
-  const statusResources = bootStatus.plugin(platformStatusPlugin, (_) => ({
+  const statusResources = bootStatus.plugin(modStatus, (_) => ({
     status: {
       UnknownError: _.status<{ message: string }>(Result.ERROR),
     },
   }))
 
-  const platformIOPlugin = 'platform/io'
-  out(`instantiating \`${platformIOPlugin}\` plugin...`)
+  const modIO = 'platform/io'
+  out(`loading \`${modIO}\` module...`)
 
   const io: IOConfiguration = {
     errorToStatus: (error: unknown): Status<any> => {

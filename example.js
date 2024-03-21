@@ -25,41 +25,7 @@ function mapObjects(values, fn) {
   return result;
 }
 
-// packages/platform/src/index.ts
-var createPlatform = () => {
-  let apis = {};
-  let providers = {};
-  const platform = {
-    loadModule: (module) => {
-      apis = { ...apis, ...module.api };
-      providers = { ...providers, ...module.resources };
-      return platform;
-    },
-    plugin: (name, resources) => {
-      const pluginId = name;
-      const constructors = resources(mapObjects(providers, ({ factory }) => factory));
-      return {
-        ...mapObjects(providers, ({ type }) => mapObjects(constructors[type.id], (constructor, key) => constructor({ pluginId, type, key }))),
-        id: pluginId
-      };
-    }
-  };
-  return platform;
-};
-var Result;
-(function(Result2) {
-  Result2[Result2["OK"] = 0] = "OK";
-  Result2[Result2["ERROR"] = 1] = "ERROR";
-})(Result || (Result = {}));
-class PlatformError extends Error {
-  status;
-  constructor(status) {
-    super();
-    this.status = status;
-  }
-}
-
-// packages/platform/src/modules/io.ts
+// packages/platform/src/io.ts
 function pipe(...ios) {
   const first = ios[0];
   const last = ios.reduce((io, current) => io.pipe(current));
@@ -143,25 +109,89 @@ var State;
   State2[State2["Failure"] = 2] = "Failure";
 })(State || (State = {}));
 
-// packages/platform/src/example.ts
-var configuration = {
-  errorToStatus: (error) => {
-    if (error instanceof PlatformError)
-      return error.status;
-    if (error instanceof Error)
+// packages/platform/src/platform.ts
+var createResourceType = (id) => ({ id });
+var createLocale = (language, country) => ({ language, country });
+var createPlatform = (locale) => {
+  let apis = {};
+  let providers = {};
+  const platform = {
+    locale,
+    loadModule: (module) => {
+      apis = { ...apis, ...module.api };
+      providers = { ...providers, ...module.resources };
+      return platform;
+    },
+    plugin: (name, resources) => {
+      const pluginId = name;
+      const constructors = resources(mapObjects(providers, ({ factory }) => factory));
       return {
-        id: "platform.status.UnknownError",
-        result: Result.ERROR,
-        params: { message: error.message }
+        ...mapObjects(providers, ({ type }) => mapObjects(constructors[type.id], (constructor, key) => constructor(platform, { pluginId, type, key }))),
+        id: pluginId
       };
-    throw error;
-  },
-  defaultFailureHandler: (status) => {
-    console.error("unhandled status: ", status);
-  }
+    }
+  };
+  return platform;
 };
-var platform = createPlatform().loadModule(createIO(configuration));
+
+// packages/platform/src/status.ts
+var status = "status";
+var Result;
+(function(Result2) {
+  Result2[Result2["OK"] = 0] = "OK";
+  Result2[Result2["ERROR"] = 1] = "ERROR";
+})(Result || (Result = {}));
+var createStatusProvider = () => ({
+  type: createResourceType(status),
+  factory: (result) => (_, id) => (params) => ({ id, result, params })
+});
+var createStatusPlugin = () => ({
+  api: {},
+  resources: { [status]: createStatusProvider() }
+});
+
+class PlatformError extends Error {
+  status;
+  constructor(status2) {
+    super();
+    this.status = status2;
+  }
+}
+
+// packages/platform/src/index.ts
+var name = "huly";
+var version = "1.0";
+var platform3 = (locale) => {
+  const out = (message) => console.log(`[${name}-${version}]: ${message}`);
+  const err = (message) => console.error(`[${name}-${version}]: ${message}`);
+  out(`booting platform version ${version} (https://huly.dev)`);
+  const platformStatusPlugin = "platform/status";
+  out(`instantiating \`${platformStatusPlugin}\` plugin...`);
+  const bootStatus = createPlatform(locale).loadModule(createStatusPlugin());
+  const statusResources = bootStatus.plugin(platformStatusPlugin, (_) => ({
+    status: {
+      UnknownError: _.status(Result.ERROR)
+    }
+  }));
+  const platformIOPlugin = "platform/io";
+  out(`instantiating \`${platformIOPlugin}\` plugin...`);
+  const io2 = {
+    errorToStatus: (error) => {
+      if (error instanceof PlatformError)
+        return error.status;
+      if (error instanceof Error)
+        return statusResources.status.UnknownError({ message: error.message });
+      throw error;
+    },
+    defaultFailureHandler: (status3) => {
+      err(status3.toString());
+    }
+  };
+  const bootIO = bootStatus.loadModule(createIO(io2));
+  return bootIO;
+};
+var x = platform3(createLocale("en"));
 export {
-  platform,
-  configuration
+  x,
+  platform3 as platform
 };
