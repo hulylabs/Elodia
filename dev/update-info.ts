@@ -5,96 +5,86 @@
 // · dev/update-info.ts
 //
 
-import { promises as fsPromises } from 'fs'
-import * as path from 'path'
+import { Glob } from 'bun'
 
-const { readFile, writeFile, readdir } = fsPromises
-
-// Function to read JSON from file
-async function readJsonFile<T>(filePath: string): Promise<T> {
-  const content = await readFile(filePath, 'utf8')
-  return JSON.parse(content) as T
+function getDirName(filePath: string): string {
+  // Split the filePath by / and return the path without the last segment (the file itself)
+  const parts = filePath.split('/')
+  parts.pop() // Remove the last segment (file name)
+  return parts.join('/') // Rejoin the remaining segments into a directory path
 }
 
-// Function to write JSON to file
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
-  const content = JSON.stringify(data, null, 2)
-  await writeFile(filePath, content, 'utf8')
+function joinPath(...segments: string[]): string {
+  // Join path segments using / and remove any accidental double slashes
+  return segments.join('/').replace(/\/{2,}/g, '/')
 }
 
-async function updateTsFiles(dir: string, packageName: string, projectInfo: any, filePath?: string) {
-  const fullDirPath = filePath ? path.join(dir, filePath) : dir
-  const files = await readdir(fullDirPath, { withFileTypes: true })
+async function updateTsFile(file: string, header: string) {
+  const bunFile = Bun.file(file)
+  const currentContent = await bunFile.text()
 
-  for (const file of files) {
-    const filePathName = filePath ? `${filePath}/${file.name}` : file.name
-
-    if (file.isDirectory()) {
-      await updateTsFiles(dir, packageName, projectInfo, filePathName)
-    } else if (file.isFile() && file.name.endsWith('.ts')) {
-      const fullPath = path.join(fullDirPath, file.name)
-      const fileContent = await readFile(fullPath, 'utf8')
-
-      const header = fullPath.endsWith('index.ts')
-        ? `/**
- * © ${projectInfo.year} ${projectInfo.author}. All Rights Reserved.
- * Licensed under the ${projectInfo.license} (SPDX: ${projectInfo.license}).
- *
- * · ${projectInfo.description} · ${projectInfo.homepage} · ${packageName}
- */
-`
-        : `//
-// © ${projectInfo.year} ${projectInfo.author}. All Rights Reserved.
-// Licensed under the ${projectInfo.license} (SPDX: ${projectInfo.license}).
-//
-// · ${packageName.replace('@huly/', '')}/${filePathName}
-//
-`
-
-      // Only update the file content if the header is not already present
-      if (!fileContent.startsWith(header)) {
-        const newContent = `${header}\n${fileContent}`
-        await writeFile(fullPath, newContent, 'utf8')
-        console.log(`Updated header for: ${fullPath}`)
-      }
-    }
+  if (!currentContent.startsWith(header)) {
+    const updatedContent = `${header}${currentContent}`
+    await Bun.write(bunFile, updatedContent)
+    console.log(`Updated header for: ${file}`)
   }
 }
 
-// Main function to update package.json files
+async function generateTsHeader(fileName: string, packageName: string, projectInfo: any): Promise<string> {
+  return fileName === 'index.ts'
+    ? `/**
+ * © ${projectInfo.year} Hardcore Engineering, Inc. All Rights Reserved.
+ * Licensed under the Eclipse Public License v2.0 (SPDX: ${projectInfo.license}).
+ *
+ * · ${projectInfo.description} · ${projectInfo.homepage} · @huly/${packageName}
+ */
+`
+    : `//
+// © ${projectInfo.year} Hardcore Engineering, Inc. All Rights Reserved.
+// Licensed under the Eclipse Public License v2.0 (SPDX: ${projectInfo.license}).
+//
+// · ${packageName}/${fileName}
+//
+`
+}
+
 async function updatePackages() {
-  // Read the project info and root package.json
-  const projectInfo = await readJsonFile<any>('project-info.json')
-  const rootPackage = await readJsonFile<any>('package.json')
+  const projectInfoBunFile = Bun.file('project-info.json')
+  const projectInfoText = await projectInfoBunFile.text()
+  const projectInfo = JSON.parse(projectInfoText)
 
-  // Iterate through the workspaces and update package.json files
-  for (const workspace of rootPackage.workspaces) {
-    const packageDir = path.resolve(__dirname, workspace)
-    try {
-      const packageFiles = await readdir(packageDir)
+  const rootPackageBunFile = Bun.file('package.json')
+  const rootPackageText = await rootPackageBunFile.text()
+  const rootPackage = JSON.parse(rootPackageText)
 
-      for (const file of packageFiles) {
-        // Only continue if the file is a package.json
-        if (!file.match(/^package\.json$/)) continue
+  for (const pattern of rootPackage.workspaces) {
+    const glob = new Glob(pattern)
+    for await (const file of glob.scan('.')) {
+      if (file.endsWith('package.json')) {
+        const packageJsonBunFile = Bun.file(file)
+        const packageJsonText = await packageJsonBunFile.text()
+        const packageJson = JSON.parse(packageJsonText)
 
-        const packagePath = path.join(packageDir, file)
-        const packageJson = await readJsonFile<any>(packagePath)
-
-        // Update package.json fields with project info
-        packageJson.version = projectInfo.version
-        packageJson.description = projectInfo.description
-        packageJson.homepage = projectInfo.homepage
-        packageJson.license = projectInfo.license
-        packageJson.repository = projectInfo.repository
-        packageJson.author = projectInfo.author
-        packageJson.contributors = projectInfo.contributors
+        // Merge projectInfo into packageJson
+        Object.assign(packageJson, projectInfo)
 
         // Write the updated package.json back to disk
-        await writeJsonFile(packagePath, packageJson)
-        console.log(`Updated: ${packagePath}`)
+        await Bun.write(file, JSON.stringify(packageJson, null, 2))
+        console.log(`Updated: ${file}`)
       }
-    } catch (error) {
-      console.error(`Error updating package in ${packageDir}:`, error)
+
+      if (file.endsWith('.ts')) {
+        const dirName = getDirName(file)
+        const packageJsonPath = joinPath(dirName, 'package.json')
+        const packageJsonFileSize = Bun.file(packageJsonPath).size
+        if (packageJsonFileSize > 0) {
+          const packageJsonText = await Bun.file(packageJsonPath).text()
+          const packageJson = JSON.parse(packageJsonText)
+          const packageName = packageJson.name.replace(/^@huly\//, '')
+          const header = await generateTsHeader(file.slice(file.lastIndexOf('/') + 1), packageName, projectInfo)
+          await updateTsFile(file, header)
+        }
+      }
     }
   }
 }
