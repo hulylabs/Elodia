@@ -126,7 +126,7 @@ async function processPackage(filePath: string): Promise<void> {
       year: projectInfo.other.year,
     }
 
-    await Bun.write(path.join(packageDir, 'platform-info.json'), JSON.stringify(platformInfo))
+    await Bun.write(path.join(packageDir, 'platform-info.json'), JSON.stringify(platformInfo, null, 2))
   }
 }
 

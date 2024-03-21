@@ -1,6 +1,6 @@
 {
   "name": "@huly/core",
-  "version": "1.0.0-alpha.1+20240321-sha.779a55d",
+  "version": "1.0.0-alpha.1+20240321-sha.fab5666",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -24,6 +24,6 @@
   },
   "author": "Hardcore Engineering, Inc <hey@huly.io> (https://huly.dev)",
   "contributors": [
-    "Andrey Platov <andrey@huly.io>"
+    "Andrey Platov <andrey@hardcoreeng.com>"
   ]
 }
