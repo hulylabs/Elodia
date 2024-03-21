@@ -44,20 +44,15 @@ export function pipe<A, B, C, D, E>(io1: IO<A, B>, io2: IO<B, C>, io3: IO<C, D>,
 export function pipe(...ios: IO<any, any>[]): IO<any, any> {
   const first = ios[0]
   const last = ios.reduce((io, current) => io.pipe(current))
-  // return new PipeIO(first, last)
   return {
-    success: (input) => first.success(input),
-    failure: (status: Status) => first.failure?.(status),
+    success: first.success,
+    failure: first.failure,
     pipe<X extends Sink<any>>(sink: Sink<any>): X {
       last.pipe(sink)
       return sink as X
     },
   }
 }
-
-// export const printDiagnostic = <I, O>(io: IO<I, O>) => {
-//   ;(io as IOBase<I, O>).printDiagnostic()
-// }
 
 export interface IOConfiguration {
   errorToStatus: (error: unknown) => Status
@@ -126,20 +121,7 @@ export function createIO(config: IOConfiguration) {
       failure: node.failure!,
     }))
 
-  const success = <T,>(result: T) =>
-    createNode<T, T>(
-      (node) => ({
-        pipe: node.pipe,
-        success(_: T) {
-          throw new Error('No input expected')
-        },
-        failure(_: Status) {
-          throw new Error('No input expected')
-        },
-      }),
-      State.Success,
-      result,
-    )
+  const success = <T,>(result: T) => createNode((node) => node, State.Success, result)
 
   return {
     api: {

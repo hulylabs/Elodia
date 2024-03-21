@@ -70,8 +70,8 @@ function pipe(...ios) {
   const first = ios[0];
   const last = ios.reduce((io, current) => io.pipe(current));
   return {
-    success: (input) => first.success(input),
-    failure: (status) => first.failure?.(status),
+    success: first.success,
+    failure: first.failure,
     pipe(sink) {
       last.pipe(sink);
       return sink;
@@ -131,15 +131,7 @@ function createIO(config) {
     },
     failure: node.failure
   }));
-  const success = (result) => createNode((node) => ({
-    pipe: node.pipe,
-    success(_) {
-      throw new Error("No input expected");
-    },
-    failure(_) {
-      throw new Error("No input expected");
-    }
-  }), State.Success, result);
+  const success = (result) => createNode((node) => node, State.Success, result);
   return {
     api: {
       syncIO,
