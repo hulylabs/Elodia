@@ -49,10 +49,12 @@ function removeCommentLines(content: string): string {
   return lines.slice(i).join('\n')
 }
 
-async function processSource(filePath: string): Promise<void> {
+async function processSource(packageDir: string, filePath: string): Promise<void> {
   console.log(`processing source file at '${filePath}'...`)
 
-  const fileContent = await Bun.file(filePath).text()
+  const fullPath = path.join(packageDir, filePath)
+
+  const fileContent = await Bun.file(fullPath).text()
   const noCommentContent = removeCommentLines(fileContent)
 
   const filename = path.basename(filePath)
@@ -65,7 +67,7 @@ async function processSource(filePath: string): Promise<void> {
   const newComment = replacePlaceholders(copyrightTs, placeholderValues as any)
   const newContent = newComment + '\n' + noCommentContent
 
-  await Bun.write(filePath, newContent)
+  await Bun.write(fullPath, newContent)
 }
 
 async function processPackage(filePath: string): Promise<void> {
@@ -89,7 +91,7 @@ async function processPackage(filePath: string): Promise<void> {
     console.log(`updating copyrights in source files for '${name}'...`)
     const glob = new Glob(`**/*.ts`)
     for await (const file of glob.scan(packageDir)) {
-      await processSource(file)
+      await processSource(packageDir, file)
     }
   } catch (error) {
     console.error(`error processing package at ${packageDir}`, error)
