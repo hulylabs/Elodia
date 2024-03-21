@@ -15,7 +15,7 @@ import { wrap, type StdIO } from './util'
 export const platform = (locale: Locale, stdio: StdIO) => {
   const std = wrap(stdio)
 
-  const statusResourcesId = 'platform/status'
+  const statusResourcesId = 'platform'
   const bootStatus = createPlatform(locale, std).loadModule(createStatusPlugin())
   const statusResources = bootStatus.plugin(statusResourcesId, (_) => ({
     status: {
@@ -34,9 +34,7 @@ export const platform = (locale: Locale, stdio: StdIO) => {
     },
   }
 
-  const bootIO = bootStatus.loadModule(createIO(io))
-
-  return bootIO
+  return bootStatus.loadModule(createIO(io))
 }
 
 export const x = platform(createLocale('en'), { out: console.log, err: console.error })
