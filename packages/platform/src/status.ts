@@ -5,7 +5,7 @@
 // · platform/status.ts
 //
 
-import { createResourceType, type ResourceId } from './platform'
+import { createResourceType, type Platform, type ResourceId } from './platform'
 
 // S T A T U S
 
@@ -30,7 +30,7 @@ const createStatusProvider = () => ({
   type: createResourceType<StatusTypeId, Params>(status),
   factory:
     <P extends Params>(result: Result) =>
-    (id: StatusId<P>) =>
+    (_: Platform<any, any>, id: StatusId<P>) =>
     (params: P): Status<P> => ({ id, result, params }),
 })
 

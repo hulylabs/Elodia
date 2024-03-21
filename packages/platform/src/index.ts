@@ -21,7 +21,7 @@ export const platform = (locale: Locale) => {
   const io: IOConfiguration = {
     errorToStatus: (error: unknown): Status<any> => {
       if (error instanceof PlatformError) return error.status
-      if (error instanceof Error) return statusResources.status.UnknownError.create({ message: error.message })
+      if (error instanceof Error) return statusResources.status.UnknownError({ message: error.message })
       throw error // not our business
     },
     defaultFailureHandler: (status: Status<any>): void => {

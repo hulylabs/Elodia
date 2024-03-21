@@ -67,7 +67,7 @@ interface Module<A extends object, MP extends ResourceProviders> {
 
 type API = Record<string, Function>
 
-interface Platform<A extends API, P extends ResourceProviders> {
+export interface Platform<A extends API, P extends ResourceProviders> {
   locale: Locale
   loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
   plugin: <T extends ResourceConstructors, F extends Factories<P>>(
