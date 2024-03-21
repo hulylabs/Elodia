@@ -7,20 +7,20 @@
 
 import { createResourceType, type Locale, type Platform, type ResourceId } from '@huly/platform'
 
-import IntlMessageFormat from 'intl-messageformat'
-
 const type = 'i18n'
 
 type IntlStringTypeId = typeof type
 type Params = Record<string, string | number | boolean>
 type IntlString<P extends Params> = ResourceId<IntlStringTypeId, P>
 
-const translate = <P extends Params>(locale: Locale, message: string, params: P) =>
-  new IntlMessageFormat(message, locale.language).format(params)
+const translate = <P extends Params>(locale: Locale, message: string, params: P) => 'hey'
+// new IntlMessageFormat(message, locale.language).format(params)
 
-const translateResource = <P extends Params>(locale: Locale, resource: IntlString<P>, params: P) =>
-  //new IntlMessageFormat(message, locale).format(params)
-  'hey'
+async function translateResource<P extends Params>(locale: Locale, resource: IntlString<P>, params: P) {
+  // const IntlMessageFormat = await import('intl-messageformat')
+  // new IntlMessageFormat(message, locale).format(params)
+  // ;('hey')
+}
 
 const i18nProvider = {
   type: createResourceType<IntlStringTypeId, Params>(type),
