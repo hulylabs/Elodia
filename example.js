@@ -26,7 +26,6 @@ function mapObjects(values, fn) {
 }
 
 // packages/platform/src/index.ts
-var createResourceType = (id) => ({ id });
 var createPlatform = () => {
   let apis = {};
   let providers = {};
@@ -52,11 +51,6 @@ var Result;
   Result2[Result2["OK"] = 0] = "OK";
   Result2[Result2["ERROR"] = 1] = "ERROR";
 })(Result || (Result = {}));
-var statusProvider = {
-  type: createResourceType("status"),
-  factory: (result) => (id) => (params) => ({ id, result, params })
-};
-
 class PlatformError extends Error {
   status;
   constructor(status) {

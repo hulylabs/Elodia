@@ -33,6 +33,15 @@ interface ResourceProvider<I extends string, T, F extends (...args: any[]) => Re
 }
 type AnyResourceProvider = ResourceProvider<string, any, (...args: any[]) => any>
 
+// L O C A L E
+
+type Locale = {
+  language: string
+  country?: string
+}
+
+export const createLocale = (language: string, country?: string): Locale => ({ language, country })
+
 // P L A T F O R M
 
 interface ResourceConstructors {
@@ -58,19 +67,23 @@ interface Module<A extends object, MP extends ResourceProviders> {
 type API = Record<string, Function>
 
 interface Platform<A extends API, P extends ResourceProviders> {
+  locale: Locale
   loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
-
   plugin: <T extends ResourceConstructors, F extends Factories<P>>(
     name: string,
     resources: (factories: F) => T,
   ) => InferredResources<T> & { id: PluginId }
 }
 
-export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(): Platform<A, P> => {
+export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(
+  locale: Locale,
+): Platform<A, P> => {
   let apis = {} as A
   let providers = {} as P
 
   const platform = {
+    locale,
+
     loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
       apis = { ...apis, ...module.api }
       providers = { ...providers, ...module.resources }
@@ -112,13 +125,13 @@ export interface Status<P extends Params = any> {
   readonly params: P
 }
 
-export const statusProvider = {
+export const createStatusProvider = () => ({
   type: createResourceType<StatusTypeId, Params>('status'),
   factory:
     <P extends Params>(result: Result) =>
     (id: StatusId<P>) =>
     (params: P): Status<P> => ({ id, result, params }),
-}
+})
 
 export class PlatformError extends Error {
   readonly status: Status<any>
