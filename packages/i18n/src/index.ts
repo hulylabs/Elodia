@@ -1,8 +1,8 @@
 /**
- * © 2024 Hardcore Engineering Inc. All Rights Reserved.
+ *   Huly® Platform™ Core • @huly/i18n
  *   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
  *
- * · Huly® Platform™ Core · @huly/i18n
+ * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
 import { createResourceType, type Locale, type Platform, type ResourceId } from '@huly/platform'

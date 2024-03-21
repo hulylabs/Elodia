@@ -1,8 +1,8 @@
 //
-// © 2024 Hardcore Engineering Inc. All Rights Reserved.
+//   Huly® Platform™ Core • platform/resource.test.ts
 //   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
-// · platform/resource.test.ts
+// © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
 import { expect, test } from 'bun:test'

@@ -12,7 +12,7 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "version": "1.0.0-alpha.1+20240321-sha.1fa6a3f",
+  "version": "1.0.0-alpha.1+20240321-sha.6b7cf44",
   "description": "Huly® Platform™ Core",
   "homepage": "https://huly.dev",
   "license": "EPL-2.0",

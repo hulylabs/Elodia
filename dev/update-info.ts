@@ -9,18 +9,18 @@ import packageJson from '../package.json'
 import projectInfo from '../project-info.json'
 
 const copyrightTs = `//
-// © {{year}} {{company}}. All Rights Reserved.
+//   {{description}} • {{packageName}}/{{filename}}
 //   Licensed under the {{full_license}} (SPDX: {{license}}).
 //
-// · {{packageName}}/{{filename}}
+// © {{year}} {{company}}. All Rights Reserved.
 //
 `
 
 const copyrightIndex = `/**
- * © {{year}} {{company}}. All Rights Reserved.
+ *   {{description}} • {{packageOrg}}/{{packageName}}
  *   Licensed under the {{full_license}} (SPDX: {{license}}).
  *
- * · {{description}} · {{packageOrg}}/{{packageName}}
+ * © {{year}} {{company}}. All Rights Reserved.
  */
 `
 

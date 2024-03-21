@@ -1,8 +1,8 @@
 //
-// © 2024 Hardcore Engineering Inc. All Rights Reserved.
+//   Huly® Platform™ Core • platform/platform.ts
 //   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
-// · platform/platform.ts
+// © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
 import { info, mapObjects, type StdIO } from './util'
@@ -84,10 +84,10 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
 ): Platform<A, P> => {
   const { description, license, homepage, version, author, contributors, year } = info
 
-  std.out(`${description} · ${homepage} · SPDX: ${license}`)
-  std.out(`copyright © ${year} ${author}`)
-  contributors.forEach((contributor) => std.out(` · ${contributor}`))
-  std.out(`starting platform ${version}...`)
+  std.out(`${description} • ${homepage} • SPDX: ${license}`)
+  std.out(`© ${year} ${author}`)
+  contributors.forEach((contributor) => std.out(`• ${contributor}`))
+  std.out(`starting platform \`${version}\`...`)
 
   let apis = {} as A
   let providers = {} as P
