@@ -1,6 +1,6 @@
 {
   "name": "@huly/core",
-  "version": "1.0.0-alpha.1+20240321-sha.6b7cf44",
+  "version": "1.0.0-alpha.1+20240321-sha.18ed8a9",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {

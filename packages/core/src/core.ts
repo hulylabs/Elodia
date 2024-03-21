@@ -5,7 +5,6 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { Resources, type IntlString } from '@huly/platform'
 import type { Class, DataType, Doc, Obj, Ref } from '../src/model'
 
 export const core = Resources.plugin('core', (_) => ({

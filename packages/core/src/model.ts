@@ -5,6 +5,8 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
+import { createResourceType, type Platform, type ResourceId } from '@huly/platform'
+
 export type Account = string & { __tag: 'account' }
 export type Timestamp = number & { __tag: 'timestamp' }
 export type Domain = string & { __tag: 'domain' }
@@ -85,3 +87,19 @@ export interface Attribute<T extends DataTypeConstraint> extends Doc {
   type: DataType<T>
   default?: T
 }
+
+// M O D E L  R E S O U R C E
+
+const model = 'class'
+
+type ModelTypeId = typeof model
+type ClassId<T extends Obj> = ResourceId<ModelTypeId, Ref<Class<T>>>
+
+export const createResourceProvider = () => ({
+  type: createResourceType<ModelTypeId, ClassId<Obj>>(model),
+  factory:
+    <T extends Obj>() =>
+    (id: ClassId<T>, platform: Platform<any, any>) =>
+    (): Ref<Class<T>> =>
+      platform.resourceIdToString(id) as Ref<Class<T>>,
+})

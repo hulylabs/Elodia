@@ -16,13 +16,19 @@ type ResourceType<I extends string, T> = {
   __type: T // virtual field to help with type inference
 }
 
+export const createResourceType = <I extends string, T>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
+
 export type ResourceId<I extends string, T> = {
   pluginId: PluginId
   type: ResourceType<I, T>
   key: string
 }
 
-export const createResourceType = <I extends string, T>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
+export const createResourceId = <I extends string, T>(
+  pluginId: PluginId,
+  type: ResourceType<I, T>,
+  key: string,
+): ResourceId<I, T> => ({ pluginId, type, key })
 
 // P R O V I D E R
 
@@ -76,6 +82,7 @@ export interface Platform<A extends API, P extends ResourceProviders> {
     name: string,
     resources: (factories: F) => T,
   ) => InferredResources<T> & { id: PluginId }
+  resourceIdToString: <I extends string, T>(resource: ResourceId<I, T>) => string
 }
 
 export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(
@@ -88,6 +95,8 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
   std.out(`© ${year} ${author}`)
   contributors.forEach((contributor) => std.out(`• ${contributor}`))
   std.out(`starting platform \`${version}\`...`)
+
+  const resourceIdSeparator = ':'
 
   let apis = {} as A
   let providers = {} as P
@@ -117,6 +126,9 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
         id: pluginId,
       } as any
     },
+
+    resourceIdToString: <I extends string, T>(resource: ResourceId<I, T>): string =>
+      [resource].map(({ pluginId, type, key }) => [pluginId, type.id, key].join(resourceIdSeparator))[0],
   } as Platform<A, P>
   return platform
 }

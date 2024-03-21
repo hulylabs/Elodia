@@ -11,7 +11,7 @@ const type = 'i18n'
 
 type IntlStringTypeId = typeof type
 type Params = Record<string, string | number | boolean>
-type IntlString<P extends Params> = ResourceId<IntlStringTypeId, P>
+export type IntlString<P extends Params> = ResourceId<IntlStringTypeId, P>
 
 const translate = <P extends Params>(locale: Locale, message: string, params: P) => 'hey'
 // new IntlMessageFormat(message, locale.language).format(params)
