@@ -1,99 +1,49 @@
-import { Glob } from 'bun'
+import packageJson from '../package.json'
+import projectInfo from '../project-info.json'
 
-function getDirName(filePath: string): string {
-  const parts = filePath.split('/')
-  parts.pop()
-  return parts.join('/')
+import { Glob, spawnSync } from 'bun'
+
+const { description, version } = projectInfo['package.json']
+
+function constructVersion(): string {
+  const date = new Date().toISOString().split('T')[0].replace(/-/g, '')
+
+  const result = spawnSync(['git', 'rev-parse', '--short', 'HEAD'])
+  const sha = result.stdout.toString().trim()
+
+  const newVersion = `${version}+${date}-sha.${sha}`
+  return newVersion
 }
 
-async function updateTsFile(file: string, header: string) {
-  const bunFile = Bun.file(file)
-  const currentContent = await bunFile.text()
+const newVersion = constructVersion()
 
-  if (!currentContent.startsWith(header)) {
-    const updatedContent = `${header}${currentContent}`
-    await Bun.write(bunFile, updatedContent)
-    console.log(`Updated header for: ${file}`)
+async function processPackage(filePath: string): Promise<void> {
+  try {
+    const fileContent = await Bun.file(filePath).text()
+    const packageData = JSON.parse(fileContent)
+
+    console.log(`processing '${packageData.name}' version '${packageData.version}'...`)
+
+    const newPackageData = { ...packageData, ...projectInfo, version: newVersion }
+    const updatedPackageJson = JSON.stringify(newPackageData, null, 2)
+
+    await Bun.write(filePath, updatedPackageJson)
+  } catch (error) {
+    console.error(`error processing package at ${filePath}`, error)
   }
 }
 
-async function generateTsHeader(fileName: string, projectName: string, projectInfo: any): Promise<string> {
-  return fileName === 'index.ts'
-    ? `/**
- * © ${projectInfo.year} Hardcore Engineering, Inc. All Rights Reserved.
- * Licensed under the Eclipse Public License v2.0 (SPDX: ${projectInfo.license}).
- *
- * · ${projectInfo.description} · ${projectInfo.homepage} · @huly/${projectName}
- */
-`
-    : `//
-// © ${projectInfo.year} Hardcore Engineering, Inc. All Rights Reserved.
-// Licensed under the Eclipse Public License v2.0 (SPDX: ${projectInfo.license}).
-//
-// · ${projectName}/${fileName}
-//
-`
-}
+async function main() {
+  console.log(`updating '${description}' project info for version '${newVersion}'...`)
 
-function joinPath(...segments: string[]): string {
-  return segments.join('/')
-}
-
-async function updatePackageJson(file: string, projectInfo: any) {
-  const packageJsonText = await Bun.file(file).text()
-  const packageJson = JSON.parse(packageJsonText)
-
-  // Merge projectInfo into packageJson
-  Object.assign(packageJson, projectInfo)
-
-  // Write updated package.json back to disk
-  await Bun.write(file, JSON.stringify(packageJson, null, 2))
-  console.log(`Updated: ${file}`)
-}
-
-async function updatePackages() {
-  const projectInfoText = await Bun.file('project-info.json').text()
-  const projectInfo = JSON.parse(projectInfoText)
-
-  const rootPackageText = await Bun.file('package.json').text()
-  const rootPackage = JSON.parse(rootPackageText)
-
-  // Ensure that we scan from the project's root directory
-  const projectRoot = process.cwd()
-
-  for (const workspace of rootPackage.workspaces) {
-    const workspaceGlob = `${workspace}/**/*` // Modified to use recursive glob pattern
-    console.log(`Scanning workspace pattern: ${workspaceGlob}`)
-    const glob = new Glob(workspaceGlob) // Use the modified pattern here
-
-    for await (const file of glob.scan({ cwd: projectRoot })) {
-      const relativePath = file.replace(projectRoot + '/', '') // Remove the root path
-
-      // If we found a package.json file, update it
-      if (relativePath.endsWith('package.json')) {
-        console.log(`Updating package.json: ${relativePath}`)
-        await updatePackageJson(file, projectInfo)
-      }
-
-      // If we found a `.ts` file, update its header
-      else if (relativePath.endsWith('.ts')) {
-        console.log(`Updating TypeScript file: ${relativePath}`)
-        const dirName = getDirName(relativePath)
-        const packageJsonPath = `${dirName}/package.json`
-        const packageJsonFile = Bun.file(joinPath(projectRoot, packageJsonPath))
-
-        if (packageJsonFile.size > 0) {
-          const packageJsonText = await packageJsonFile.text()
-          const packageJson = JSON.parse(packageJsonText)
-          const projectName = packageJson.name.replace(/^@huly\//, '')
-          const header = await generateTsHeader(relativePath.split('/').pop() || '', projectName, projectInfo)
-          await updateTsFile(file, header)
-        }
-      }
+  const locations: string[] = packageJson.workspaces
+  for (const location of locations) {
+    console.log(`scanning ${location}...`)
+    const glob = new Glob(`${location}/package.json`)
+    for await (const file of glob.scan('.')) {
+      await processPackage(file)
     }
   }
 }
 
-updatePackages().catch((error) => {
-  console.error('Failed to update package.json files and .ts headers:', error)
-})
+main()
