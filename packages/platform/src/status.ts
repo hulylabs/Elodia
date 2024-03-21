@@ -5,7 +5,7 @@
 // · platform/status.ts
 //
 
-import { createResourceType, type Platform, type ResourceId } from './platform'
+import { createResourceType, type ResourceId } from './platform'
 
 // S T A T U S
 

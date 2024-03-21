@@ -7,7 +7,6 @@ const copyrightTs = `//
 //
 // · {{filename}}
 //
-
 `
 
 import { Glob, spawnSync } from 'bun'
