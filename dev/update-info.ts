@@ -10,7 +10,7 @@ import projectInfo from '../project-info.json'
 
 const copyrightTs = `//
 // © {{year}} {{company}}. All Rights Reserved.
-// Licensed under the {{full_license}} (SPDX: {{license}}).
+//   Licensed under the {{full_license}} (SPDX: {{license}}).
 //
 // · {{packageName}}/{{filename}}
 //
@@ -18,7 +18,7 @@ const copyrightTs = `//
 
 const copyrightIndex = `/**
  * © {{year}} {{company}}. All Rights Reserved.
- * Licensed under the {{full_license}} (SPDX: {{license}}).
+ *   Licensed under the {{full_license}} (SPDX: {{license}}).
  *
  * · {{description}} · {{packageOrg}}/{{packageName}}
  */
