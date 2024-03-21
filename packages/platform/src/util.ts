@@ -5,10 +5,10 @@
 // · platform/util.ts
 //
 
-import packageJson from '../package.json'
+import packageJson from '../platform-info.json'
 
-const { name, version, license, homepage, author, description, contributors } = packageJson
-export const info = { name, version, license, homepage, author, description, contributors }
+const { version, license, homepage, author, description, contributors } = packageJson
+export const info = { version, license, homepage, author, description, contributors }
 
 export type CompList<T> = T | T[] | undefined
 

@@ -123,6 +123,20 @@ async function main() {
       await processPackage(file)
     }
   }
+
+  console.log(`updating platform-info.json'...`)
+
+  const info = projectInfo['package.json']
+  const platformInfo = {
+    version: newVersion,
+    description,
+    license: info.license,
+    author: info.author,
+    homepage: info.homepage,
+    contributors: info.contributors,
+  }
+
+  await Bun.write('./packages/platform', JSON.stringify(platformInfo))
 }
 
 main()
