@@ -8,6 +8,8 @@
 import { type Status } from './status'
 import { addCompList, iterateCompList, type CompList } from './util'
 
+const io = 'io'
+
 type Success<T> = (result: T) => void
 type Failure = (status: Status) => void
 
@@ -124,6 +126,7 @@ export function createIO(config: IOConfiguration) {
   const success = <T,>(result: T) => createNode((node) => node, State.Success, result)
 
   return {
+    id: io,
     api: {
       syncIO,
       asyncIO,

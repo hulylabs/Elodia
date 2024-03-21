@@ -5,6 +5,11 @@
 // · platform/utils.ts
 //
 
+import packageJson from '../package.json'
+
+export const version: string = packageJson.version
+export const homepage: string = packageJson.homepage
+
 export type CompList<T> = T | T[] | undefined
 
 export function* iterateCompList<T>(list: CompList<T>): Generator<T> {
@@ -27,3 +32,11 @@ export function mapObjects<T, U>(values: Record<string, T>, fn: (value: T, key: 
   for (const key in values) result[key] = fn(values[key], key)
   return result
 }
+
+type Std = (message: string) => void
+export type StdIO = { out: Std; err?: Std }
+
+export const wrap = (std: StdIO) => ({
+  out: (message: string) => std.out(`[${packageJson.name}] (stdout): ${message}`),
+  err: (message: string) => (std.err ?? std.out)(`[${packageJson.name}] (stderr): ${message}`),
+})

@@ -35,6 +35,7 @@ const createStatusProvider = () => ({
 })
 
 export const createStatusPlugin = () => ({
+  id: status,
   api: {},
   resources: { [status]: createStatusProvider() },
 })

@@ -6,7 +6,7 @@
 //
 
 import { Platform } from './legacy/platform'
-import { mapObjects } from './util'
+import { homepage, mapObjects, version, type StdIO } from './util'
 
 // R E S O U R C E  M A N A G E M E N T
 
@@ -33,6 +33,7 @@ interface ResourceProvider<I extends string, T, F extends (...args: any[]) => Re
   factory: F
 }
 type AnyResourceProvider = ResourceProvider<string, any, (...args: any[]) => any>
+export const createResourceProvider = <T, P extends ResourceProvider<any, T, any>>(provider: P): P => provider
 
 // L O C A L E
 
@@ -61,6 +62,7 @@ type Factories<P> = {
 
 type ResourceProviders = Record<string, AnyResourceProvider>
 interface Module<A extends object, MP extends ResourceProviders> {
+  readonly id: string
   api: A
   resources: MP
 }
@@ -78,7 +80,10 @@ export interface Platform<A extends API, P extends ResourceProviders> {
 
 export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(
   locale: Locale,
+  std: StdIO,
 ): Platform<A, P> => {
+  std.out(`booting platform version ${version} (${homepage}})`)
+
   let apis = {} as A
   let providers = {} as P
 
@@ -86,6 +91,7 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
     locale,
 
     loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
+      std.out(`loading \`${module.id}\` module...`)
       apis = { ...apis, ...module.api }
       providers = { ...providers, ...module.resources }
       return platform as Platform<A & MA, P & MP>

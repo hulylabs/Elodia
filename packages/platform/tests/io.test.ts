@@ -7,19 +7,12 @@
 
 import { expect, test } from 'bun:test'
 
-import { PlatformError, Result, type Status, type StatusId } from '../src/'
-import { createIO, type IOConfiguration } from '../src/modules/io'
+import { createIO, type IOConfiguration } from '../src/io'
+import { type Status } from '../src/status'
 import { expectIO } from './util'
 
 export const configuration: IOConfiguration = {
   errorToStatus: (error: unknown): Status<any> => {
-    if (error instanceof PlatformError) return error.status
-    if (error instanceof Error)
-      return {
-        id: 'platform.status.UnknownError' as unknown as StatusId<{ message: string }>,
-        result: Result.ERROR,
-        params: { message: error.message },
-      }
     throw error // not our business
   },
   defaultFailureHandler: (status: Status<any>): void => {
