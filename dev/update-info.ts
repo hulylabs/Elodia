@@ -15,6 +15,8 @@ const copyrightTs = `
 import { Glob, spawnSync } from 'bun'
 import path from 'node:path'
 
+const { description, version } = projectInfo['package.json']
+
 function constructVersion(): string {
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '')
 
@@ -26,7 +28,6 @@ function constructVersion(): string {
 }
 
 const newVersion = constructVersion()
-const { description, version } = projectInfo['package.json']
 
 function replacePlaceholders(template: string, placeholderValues: Record<string, string>): string {
   return template.replace(/{{\s*([\w_]+)\s*}}/g, (match, name) => {
