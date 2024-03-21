@@ -37,7 +37,7 @@ const platform = createPlatform(locale, { out: console.log }).loadModule({
       type: createResourceType<XResourceTypeId, Params>(xtest),
       factory:
         <P extends Params>() =>
-        (platform: Platform<any, any>, i18n: IntlString<P>) =>
+        (i18n: IntlString<P>) =>
         (params: P) =>
           translate(i18n, params),
     },

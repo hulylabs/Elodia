@@ -5,8 +5,7 @@
 // · platform/platform.ts
 //
 
-import { Platform } from './legacy/platform'
-import { homepage, mapObjects, version, type StdIO } from './util'
+import { info, mapObjects, type StdIO } from './util'
 
 // R E S O U R C E  M A N A G E M E N T
 
@@ -82,7 +81,12 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
   locale: Locale,
   std: StdIO,
 ): Platform<A, P> => {
-  std.out(`booting platform version ${version} (${homepage}})`)
+  const { description, license, homepage, version, author, contributors } = info
+  std.out(`${description} · ${homepage} · SPDX: ${license}`)
+  std.out(`copyright © 2024 ${author}`)
+  contributors.forEach((contributor) => std.out(` · ${contributor}`))
+
+  std.out(`starting platform ${version}...`)
 
   let apis = {} as A
   let providers = {} as P
@@ -91,7 +95,7 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
     locale,
 
     loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
-      std.out(`loading \`${module.id}\` module...`)
+      std.out(`initializing \`${module.id}\` module...`)
       apis = { ...apis, ...module.api }
       providers = { ...providers, ...module.resources }
       return platform as Platform<A & MA, P & MP>
@@ -105,7 +109,7 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
       const constructors = resources(mapObjects(providers, ({ factory }) => factory) as Factories<P>)
       return {
         ...mapObjects(providers, ({ type }) =>
-          mapObjects(constructors[type.id], (constructor, key) => constructor(platform, { pluginId, type, key })),
+          mapObjects(constructors[type.id], (constructor, key) => constructor({ pluginId, type, key }, platform)),
         ),
         id: pluginId,
       } as any

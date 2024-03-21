@@ -14,7 +14,7 @@ export const platform = (locale: Locale, stdio: StdIO) => {
   const std = wrap(stdio)
 
   const statusResourcesId = 'platform/status'
-  const bootStatus = createPlatform(locale, stdio).loadModule(createStatusPlugin())
+  const bootStatus = createPlatform(locale, std).loadModule(createStatusPlugin())
   const statusResources = bootStatus.plugin(statusResourcesId, (_) => ({
     status: {
       UnknownError: _.status<{ message: string }>(Result.ERROR),

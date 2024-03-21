@@ -7,8 +7,8 @@
 
 import packageJson from '../package.json'
 
-export const version: string = packageJson.version
-export const homepage: string = packageJson.homepage
+const { name, version, license, homepage, author, description, contributors } = packageJson
+export const info = { name, version, license, homepage, author, description, contributors }
 
 export type CompList<T> = T | T[] | undefined
 
@@ -37,6 +37,6 @@ type Std = (message: string) => void
 export type StdIO = { out: Std; err?: Std }
 
 export const wrap = (std: StdIO) => ({
-  out: (message: string) => std.out(`[${packageJson.name}] (stdout): ${message}`),
-  err: (message: string) => (std.err ?? std.out)(`[${packageJson.name}] (stderr): ${message}`),
+  out: (message: string) => std.out(`[${name}] (stdout): ${message}`),
+  err: (message: string) => (std.err ?? std.out)(`[${name}] (stderr): ${message}`),
 })
