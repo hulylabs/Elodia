@@ -8,10 +8,11 @@
       "type": "git",
       "url": "https://github.com/huly-dev/core.git"
     },
-    "author": "Hardcore Engineering, Inc. <hey@huly.io> (https://huly.io)",
-    "contributors": ["Andrey Platov <andrey@huly.io> (https://hardcoreeng.com)"]
+    "contributors": ["Andrey Platov <andrey@huly.io>"]
   },
   "other": {
+    "company": "Hardcore Engineering Inc",
+    "full_license": "Eclipse Public License v2.0",
     "year": "2024"
   }
 }

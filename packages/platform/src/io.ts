@@ -1,8 +1,8 @@
 //
-// © 2024 Hardcore Engineering, Inc. All Rights Reserved.
+// © 2024 Hardcore Engineering Inc. All Rights Reserved.
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
-// · platform/modules/io.ts
+// · platform/io.ts
 //
 
 import { type Status } from './status'

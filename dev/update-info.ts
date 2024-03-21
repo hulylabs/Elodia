@@ -1,3 +1,10 @@
+//
+// © 2024 Hardcore Engineering, Inc.. All Rights Reserved.
+// Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
+//
+// · dev/update-info.ts
+//
+
 import packageJson from '../package.json'
 import projectInfo from '../project-info.json'
 
@@ -5,8 +12,16 @@ const copyrightTs = `//
 // © {{year}} {{company}}. All Rights Reserved.
 // Licensed under the {{full_license}} (SPDX: {{license}}).
 //
-// · {{filename}}
+// · {{packageName}}/{{filename}}
 //
+`
+
+const copyrightIndex = `/**
+ * © {{year}} {{company}}. All Rights Reserved.
+ * Licensed under the {{full_license}} (SPDX: {{license}}).
+ *
+ * · {{description}} · {{packageOrg}}/{{packageName}}
+ */
 `
 
 import { Glob, spawnSync } from 'bun'
@@ -46,7 +61,7 @@ function removeCommentLines(content: string): string {
   return lines.slice(i).join('\n')
 }
 
-async function processSource(packageDir: string, filePath: string): Promise<void> {
+async function processSource(packageFull: string, packageDir: string, filePath: string): Promise<void> {
   console.log(`processing source file at '${filePath}'...`)
 
   const fullPath = path.join(packageDir, filePath)
@@ -55,13 +70,18 @@ async function processSource(packageDir: string, filePath: string): Promise<void
   const noCommentContent = removeCommentLines(fileContent)
 
   const filename = path.basename(filePath)
+  const [packageOrg, packageName] = packageFull.split('/')
+
   const placeholderValues = {
     ...projectInfo['package.json'],
     ...projectInfo.other,
     version: newVersion,
     filename,
+    packageOrg,
+    packageName,
   }
-  const newComment = replacePlaceholders(copyrightTs, placeholderValues as any)
+  const template = filename.endsWith('index.ts') ? copyrightIndex : copyrightTs
+  const newComment = replacePlaceholders(template, placeholderValues as any)
   const newContent = newComment + noCommentContent
 
   await Bun.write(fullPath, newContent)
@@ -69,29 +89,26 @@ async function processSource(packageDir: string, filePath: string): Promise<void
 
 async function processPackage(filePath: string): Promise<void> {
   const packageDir = path.dirname(filePath)
-  try {
-    const fileContent = await Bun.file(filePath).text()
-    const packageData = JSON.parse(fileContent)
-    const name = packageData.name
+  const fileContent = await Bun.file(filePath).text()
+  const packageData = JSON.parse(fileContent)
 
-    console.log(`\nprocessing '${name}'...`)
+  const packageFull = packageData.name
 
-    const newPackageData = {
-      ...packageData,
-      ...projectInfo['package.json'],
-      version: newVersion,
-    }
-    const updatedPackageJson = JSON.stringify(newPackageData, null, 2)
+  console.log(`\nprocessing '${packageFull}'...`)
 
-    await Bun.write(filePath, updatedPackageJson)
+  const newPackageData = {
+    ...packageData,
+    ...projectInfo['package.json'],
+    version: newVersion,
+  }
+  const updatedPackageJson = JSON.stringify(newPackageData, null, 2)
 
-    console.log(`updating copyrights in source files for '${name}'...`)
-    const glob = new Glob(`**/*.ts`)
-    for await (const file of glob.scan(packageDir)) {
-      await processSource(packageDir, file)
-    }
-  } catch (error) {
-    console.error(`error processing package at ${packageDir}`, error)
+  await Bun.write(filePath, updatedPackageJson)
+
+  console.log(`updating copyrights in source files for '${packageFull}'...`)
+  const glob = new Glob(`**/*.ts`)
+  for await (const file of glob.scan(packageDir)) {
+    await processSource(packageFull, packageDir, file)
   }
 }
 
