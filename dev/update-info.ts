@@ -24,7 +24,12 @@ async function processPackage(filePath: string): Promise<void> {
 
     console.log(`processing '${packageData.name}' version '${packageData.version}'...`)
 
-    const newPackageData = { ...packageData, ...projectInfo, version: newVersion }
+    const newPackageData = {
+      ...packageData,
+      ...projectInfo['package.json'],
+      ...projectInfo.other,
+      version: newVersion,
+    }
     const updatedPackageJson = JSON.stringify(newPackageData, null, 2)
 
     await Bun.write(filePath, updatedPackageJson)
