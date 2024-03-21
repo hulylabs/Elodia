@@ -123,6 +123,7 @@ async function processPackage(filePath: string): Promise<void> {
       author: info.author,
       homepage: info.homepage,
       contributors: info.contributors,
+      year: projectInfo.other.year,
     }
 
     await Bun.write(path.join(packageDir, 'platform-info.json'), JSON.stringify(platformInfo))

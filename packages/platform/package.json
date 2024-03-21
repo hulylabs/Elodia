@@ -1,6 +1,6 @@
 {
   "name": "@huly/platform",
-  "version": "1.0.0-alpha.1+20240321-sha.9b719f7",
+  "version": "1.0.0-alpha.1+20240321-sha.779a55d",
   "description": "Huly® Platform™ Core",
   "module": "src/index.ts",
   "types": "src/index.ts",

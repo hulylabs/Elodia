@@ -81,11 +81,11 @@ export const createPlatform = <A extends API, P extends Record<string, AnyResour
   locale: Locale,
   std: StdIO,
 ): Platform<A, P> => {
-  const { description, license, homepage, version, author, contributors } = info
-  std.out(`${description} · ${homepage} · SPDX: ${license}`)
-  std.out(`copyright © 2024 ${author}`)
-  contributors.forEach((contributor) => std.out(` · ${contributor}`))
+  const { description, license, homepage, version, author, contributors, year } = info
 
+  std.out(`${description} · ${homepage} · SPDX: ${license}`)
+  std.out(`copyright © ${year} ${author}`)
+  contributors.forEach((contributor) => std.out(` · ${contributor}`))
   std.out(`starting platform ${version}...`)
 
   let apis = {} as A
