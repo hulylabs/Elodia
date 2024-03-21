@@ -6,17 +6,30 @@
  */
 
 import { createIO, type IOConfiguration } from './io'
-import { createPlatform, type Locale } from './platform'
+import { createLocale, createPlatform, type Locale } from './platform'
 import { PlatformError, Result, createStatusPlugin, type Status } from './status'
 
-export const platform = (locale: Locale) => {
-  const bootStatus = createPlatform(locale).loadModule(createStatusPlugin())
+const name = 'huly'
+const version = '1.0'
 
-  const statusResources = bootStatus.plugin('boot_status', (_) => ({
+export const platform = (locale: Locale) => {
+  const out = (message: string) => console.log(`[${name}-${version}]: ${message}`)
+  const err = (message: string) => console.error(`[${name}-${version}]: ${message}`)
+
+  out(`booting platform version ${version} (https://huly.dev)`)
+
+  const platformStatusPlugin = 'platform/status'
+  out(`instantiating \`${platformStatusPlugin}\` plugin...`)
+
+  const bootStatus = createPlatform(locale).loadModule(createStatusPlugin())
+  const statusResources = bootStatus.plugin(platformStatusPlugin, (_) => ({
     status: {
       UnknownError: _.status<{ message: string }>(Result.ERROR),
     },
   }))
+
+  const platformIOPlugin = 'platform/io'
+  out(`instantiating \`${platformIOPlugin}\` plugin...`)
 
   const io: IOConfiguration = {
     errorToStatus: (error: unknown): Status<any> => {
@@ -25,7 +38,7 @@ export const platform = (locale: Locale) => {
       throw error // not our business
     },
     defaultFailureHandler: (status: Status<any>): void => {
-      console.error('unhandled status: ', status)
+      err(status.toString())
     },
   }
 
@@ -33,3 +46,5 @@ export const platform = (locale: Locale) => {
 
   return bootIO
 }
+
+export const x = platform(createLocale('en'))
