@@ -5,7 +5,7 @@
 // · platform/modules/i18n.ts
 //
 
-import { createResourceType, type ResourceId } from '../'
+import { createResourceType, type Platform, type ResourceId } from '../'
 
 import IntlMessageFormat from 'intl-messageformat'
 
@@ -20,15 +20,16 @@ export type Locale = string & { __tag: 'locale' }
 const translate = <P extends Params>(locale: Locale, message: string, params: P) =>
   new IntlMessageFormat(message, locale).format(params)
 
-// const translate = <P extends Params>(i18n: IntlString<P>, params: P) => JSON.stringify({ i18n, params })
+const translateResource = <P extends Params>(locale: Locale, resource: IntlString<P>, params: P) =>
+  new IntlMessageFormat(message, locale).format(params)
 
 const i18nProvider = {
   type: createResourceType<IntlStringTypeId, Params>(type),
   factory:
     <P extends Params>() =>
-    (i18n: IntlString<P>) =>
+    (platform: Platform<any, any>, i18n: IntlString<P>) =>
     (params: P) =>
-      translate(i18n, params),
+      translateResource(platform.locale, i18n, params),
 }
 
 export function createI18n() {

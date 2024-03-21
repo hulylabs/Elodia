@@ -5,139 +5,31 @@
  * · Huly Platform
  */
 
-import { mapObjects } from './util'
+import { createIO, type IOConfiguration } from './io'
+import { createPlatform, type Locale } from './platform'
+import { PlatformError, Result, createStatusPlugin, type Status } from './status'
 
-// R E S O U R C E  M A N A G E M E N T
+export const platform = (locale: Locale) => {
+  const bootStatus = createPlatform(locale).loadModule(createStatusPlugin())
 
-type PluginId = string & { __tag: 'plugin-id' }
-type ResourceTypeId<I extends string> = I & { __tag: 'resource-type-id' }
-type ResourceType<I extends string, T> = {
-  id: ResourceTypeId<I>
-  __type: T // virtual field to help with type inference
-}
-
-export type ResourceId<I extends string, T> = {
-  pluginId: PluginId
-  type: ResourceType<I, T>
-  key: string
-}
-
-export const createResourceType = <I extends string, T>(id: I): ResourceType<I, T> => ({ id }) as ResourceType<I, T>
-
-// P R O V I D E R
-
-type ResourceConstructor<I extends string, T> = (resource: ResourceId<I, T>) => any
-interface ResourceProvider<I extends string, T, F extends (...args: any[]) => ResourceConstructor<I, T>> {
-  type: ResourceType<I, T>
-  factory: F
-}
-type AnyResourceProvider = ResourceProvider<string, any, (...args: any[]) => any>
-
-// L O C A L E
-
-type Locale = {
-  language: string
-  country?: string
-}
-
-export const createLocale = (language: string, country?: string): Locale => ({ language, country })
-
-// P L A T F O R M
-
-interface ResourceConstructors {
-  [type: string]: { [key: string]: ResourceConstructor<any, any> }
-}
-
-type InferredResources<T extends ResourceConstructors> = {
-  [Type in keyof T]: {
-    [Key in keyof T[Type]]: ReturnType<T[Type][Key]> // extends ResourceConstructor<string, any, infer R> ? R : never
-  }
-}
-
-type Factories<P> = {
-  [K in keyof P]: P[K] extends ResourceProvider<any, any, infer F> ? F : never
-}
-
-type ResourceProviders = Record<string, AnyResourceProvider>
-interface Module<A extends object, MP extends ResourceProviders> {
-  api: A
-  resources: MP
-}
-
-type API = Record<string, Function>
-
-interface Platform<A extends API, P extends ResourceProviders> {
-  locale: Locale
-  loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
-  plugin: <T extends ResourceConstructors, F extends Factories<P>>(
-    name: string,
-    resources: (factories: F) => T,
-  ) => InferredResources<T> & { id: PluginId }
-}
-
-export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(
-  locale: Locale,
-): Platform<A, P> => {
-  let apis = {} as A
-  let providers = {} as P
-
-  const platform = {
-    locale,
-
-    loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
-      apis = { ...apis, ...module.api }
-      providers = { ...providers, ...module.resources }
-      return platform as Platform<A & MA, P & MP>
+  const statusResources = bootStatus.plugin('boot_status', (_) => ({
+    status: {
+      UnknownError: _.status<{ message: string }>(Result.ERROR),
     },
+  }))
 
-    plugin: <T extends ResourceConstructors>(
-      name: string,
-      resources: (factories: Factories<P>) => T,
-    ): InferredResources<T> & { id: PluginId } => {
-      const pluginId = name as PluginId
-      const constructors = resources(mapObjects(providers, ({ factory }) => factory) as Factories<P>)
-      return {
-        ...mapObjects(providers, ({ type }) =>
-          mapObjects(constructors[type.id], (constructor, key) => constructor({ pluginId, type, key })),
-        ),
-        id: pluginId,
-      } as any
+  const io: IOConfiguration = {
+    errorToStatus: (error: unknown): Status<any> => {
+      if (error instanceof PlatformError) return error.status
+      if (error instanceof Error) return statusResources.status.UnknownError.create({ message: error.message })
+      throw error // not our business
+    },
+    defaultFailureHandler: (status: Status<any>): void => {
+      console.error('unhandled status: ', status)
     },
   }
 
-  return platform as Platform<A, P>
-}
+  const bootIO = bootStatus.loadModule(createIO(io))
 
-// S T A T U S
-
-type StatusTypeId = 'status'
-export type Params = Record<string, string | number | boolean>
-export type StatusId<P extends Params> = ResourceId<StatusTypeId, P>
-
-export enum Result {
-  OK,
-  ERROR,
-}
-
-export interface Status<P extends Params = any> {
-  readonly id: StatusId<P>
-  readonly result: Result
-  readonly params: P
-}
-
-export const createStatusProvider = () => ({
-  type: createResourceType<StatusTypeId, Params>('status'),
-  factory:
-    <P extends Params>(result: Result) =>
-    (id: StatusId<P>) =>
-    (params: P): Status<P> => ({ id, result, params }),
-})
-
-export class PlatformError extends Error {
-  readonly status: Status<any>
-
-  constructor(status: Status<any>) {
-    super()
-    this.status = status
-  }
+  return bootIO
 }

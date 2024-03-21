@@ -5,8 +5,8 @@
 // · platform/modules/io.ts
 //
 
-import { type Status } from '../'
-import { addCompList, iterateCompList, type CompList } from '../util'
+import { type Status } from './status'
+import { addCompList, iterateCompList, type CompList } from './util'
 
 type Success<T> = (result: T) => void
 type Failure = (status: Status) => void
