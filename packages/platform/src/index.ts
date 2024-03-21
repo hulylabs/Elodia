@@ -129,37 +129,3 @@ export class PlatformError extends Error {
     this.status = status
   }
 }
-
-// E X A M P L E
-
-type XResourceTypeId = 'xtest'
-type IntlString<P extends Params> = ResourceId<XResourceTypeId, P>
-
-const xtest = createResourceType<XResourceTypeId, Params>('xtest')
-
-const translate = <P extends Params>(i18n: IntlString<P>, params: P): string =>
-  i18n.pluginId + '-' + i18n.type.id + '-' + i18n.key + '-' + JSON.stringify(params)
-
-const resourceProvider = {
-  type: xtest,
-  factory:
-    <P extends Params>() =>
-    (i18n: IntlString<P>) =>
-    (params: P) =>
-      translate(i18n, params),
-}
-
-const platform = createPlatform().loadModule({
-  api: {},
-  resources: {
-    xtest: resourceProvider,
-  },
-})
-
-const plugin = platform.plugin('myplugin', (factories) => ({
-  xtest: {
-    Key1: factories.xtest<{ y: number }>(),
-  },
-}))
-
-console.log(plugin.xtest.Key1)
