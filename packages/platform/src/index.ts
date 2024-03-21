@@ -5,6 +5,8 @@
  * · Huly® Platform™ Core · @huly/platform
  */
 
+export * from './platform'
+
 import { createIO, type IOConfiguration } from './io'
 import { createLocale, createPlatform, type Locale } from './platform'
 import { PlatformError, Result, createStatusPlugin, type Status } from './status'
