@@ -2,10 +2,10 @@
 // © 2024 Hardcore Engineering, Inc. All Rights Reserved.
 // Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
 //
-// · platform/io.ts
+// · platform/module/io.ts
 //
 
-import type { Status } from '../resources/status'
+import type { Status } from '../'
 import { addCompList, iterateCompList, type CompList } from '../util'
 
 type Success<T> = (result: T) => void
@@ -21,10 +21,6 @@ export interface Out<O> {
 export interface IO<I, O> extends Sink<I>, Out<O> {}
 
 type AnyIO = IO<any, any>
-
-interface SyncIterator<I, O> extends IO<I, O> {
-  [Symbol.iterator](): Iterator<AnyIO, O>
-}
 
 enum State {
   Pending,
@@ -134,13 +130,6 @@ export interface IOConfiguration {
   defaultFailureHandler: Failure
 }
 
-// interface IOModule {
-//   syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O) => IO<I, O>
-//   asyncIO: <I, O>(op: (value: I) => Promise<O>) => IO<I, O>
-//   syncCode: <I, O>(code: () => Generator<IO<any, any>>) => SyncIterator<I, O>
-//   asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>) => IO<I, O>
-// }
-
 export function createIO(config: IOConfiguration) {
   class SyncIO<I, O> extends IOBase<I, O> {
     constructor(private readonly op: (value: I, pipe?: Out<O>) => O) {
@@ -172,9 +161,10 @@ export function createIO(config: IOConfiguration) {
   }
 
   return {
-    syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op),
-    asyncIO: <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op),
-    // syncCode: <I, O>(code: () => Generator<IO<any, any>>): SyncIterator<I, O> => new SyncCode(code),
-    // asyncCode: <I, O>(code: (x: I) => AsyncGenerator<IO<any, any>>): IO<I, O> => new AsyncCode(code),
+    api: {
+      syncIO: <I, O>(op: (value: I, pipe?: Out<O>) => O): IO<I, O> => new SyncIO(op),
+      asyncIO: <I, O>(op: (value: I) => Promise<O>): IO<I, O> => new AsyncIO(op),
+    },
+    resources: {},
   }
 }

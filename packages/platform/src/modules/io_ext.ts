@@ -5,6 +5,10 @@
 // · platform/io_ext.ts
 //
 
+interface SyncIterator<I, O> extends IO<I, O> {
+  [Symbol.iterator](): Iterator<AnyIO, O>
+}
+
 class SyncCode<I, O> extends IOBase<I, O> implements SyncIterator<I, O> {
   constructor(private readonly code: () => Generator<IO<any, any>, O>) {
     super()

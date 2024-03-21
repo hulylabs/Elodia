@@ -9,8 +9,8 @@ import { mapObjects } from './util'
 
 // R E S O U R C E  M A N A G E M E N T
 
-export type PluginId = string & { __tag: 'plugin-id' }
-export type ResourceTypeId<I extends string> = I & { __tag: 'resource-type-id' }
+type PluginId = string & { __tag: 'plugin-id' }
+type ResourceTypeId<I extends string> = I & { __tag: 'resource-type-id' }
 type ResourceType<I extends string, T> = {
   id: ResourceTypeId<I>
   __type: T // virtual field to help with type inference
@@ -27,7 +27,7 @@ export const createResourceType = <I extends string, T>(id: I): ResourceType<I, 
 // P R O V I D E R
 
 type ResourceConstructor<I extends string, T> = (resource: ResourceId<I, T>) => any
-export interface ResourceProvider<I extends string, T, F extends (...args: any[]) => ResourceConstructor<I, T>> {
+interface ResourceProvider<I extends string, T, F extends (...args: any[]) => ResourceConstructor<I, T>> {
   type: ResourceType<I, T>
   factory: F
 }
@@ -48,14 +48,16 @@ type InferredResources<T extends ResourceConstructors> = {
 type Factories<P> = {
   [K in keyof P]: P[K] extends ResourceProvider<any, any, infer F> ? F : never
 }
-type ResourceProviders = Record<string, AnyResourceProvider>
 
-export interface Module<A extends object, MP extends ResourceProviders> {
+type ResourceProviders = Record<string, AnyResourceProvider>
+interface Module<A extends object, MP extends ResourceProviders> {
   api: A
   resources: MP
 }
 
-interface Platform<A extends object, P extends ResourceProviders> {
+type API = Record<string, Function>
+
+interface Platform<A extends API, P extends ResourceProviders> {
   loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>) => Platform<A & MA, P & MP>
 
   plugin: <T extends ResourceConstructors, F extends Factories<P>>(
@@ -64,15 +66,12 @@ interface Platform<A extends object, P extends ResourceProviders> {
   ) => InferredResources<T> & { id: PluginId }
 }
 
-export const createPlatform = <A extends object, P extends Record<string, AnyResourceProvider> = {}>(): Platform<
-  A,
-  P
-> => {
+export const createPlatform = <A extends API, P extends Record<string, AnyResourceProvider> = {}>(): Platform<A, P> => {
   let apis = {} as A
   let providers = {} as P
 
   const platform = {
-    loadModule: <MA extends object, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
+    loadModule: <MA extends API, MP extends ResourceProviders>(module: Module<MA, MP>): Platform<A & MA, P & MP> => {
       apis = { ...apis, ...module.api }
       providers = { ...providers, ...module.resources }
       return platform as Platform<A & MA, P & MP>

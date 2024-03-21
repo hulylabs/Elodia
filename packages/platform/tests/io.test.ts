@@ -7,10 +7,29 @@
 
 import { expect, test } from 'bun:test'
 
-import { createIO, pipe, success } from '../src/modules/io'
-import { configuration, expectIO } from './util'
+import { PlatformError, Result, type Status, type StatusId } from '../src/'
+import { createIO, pipe, success, type IOConfiguration } from '../src/modules/io'
+import { expectIO } from './util'
+
+export const configuration: IOConfiguration = {
+  errorToStatus: (error: unknown): Status<any> => {
+    if (error instanceof PlatformError) return error.status
+    if (error instanceof Error)
+      return {
+        id: 'platform.status.UnknownError' as unknown as StatusId<{ message: string }>,
+        result: Result.ERROR,
+        params: { message: error.message },
+      }
+    throw error // not our business
+  },
+  defaultFailureHandler: (status: Status<any>): void => {
+    console.error('unhandled status: ', status)
+  },
+}
 
 const IO = createIO(configuration)
+
+IO.api.syncIO
 
 test('expect', () => {
   const x = pipe(
