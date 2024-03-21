@@ -53,8 +53,8 @@ function removeCommentLines(content: string): string {
 
   let i = 0
   for (; i < lines.length; i++) {
-    const trimmedLine = lines[i].trim()
-    if (!trimmedLine.startsWith('//') && !trimmedLine.startsWith('/*') && !trimmedLine.startsWith(' *')) {
+    const trimmedLine = lines[i]
+    if (!(trimmedLine.startsWith('//') || trimmedLine.startsWith('/*') || trimmedLine.startsWith(' *'))) {
       break
     }
   }
