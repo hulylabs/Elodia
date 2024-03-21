@@ -30,7 +30,7 @@ const createStatusProvider = () => ({
   type: createResourceType<StatusTypeId, Params>(status),
   factory:
     <P extends Params>(result: Result) =>
-    (_: Platform<any, any>, id: StatusId<P>) =>
+    (id: StatusId<P>) =>
     (params: P): Status<P> => ({ id, result, params }),
 })
 

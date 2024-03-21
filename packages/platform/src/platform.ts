@@ -27,7 +27,7 @@ export const createResourceType = <I extends string, T>(id: I): ResourceType<I, 
 
 // P R O V I D E R
 
-type ResourceConstructor<I extends string, T> = (platform: Platform<any, any>, resource: ResourceId<I, T>) => any
+type ResourceConstructor<I extends string, T> = (resource: ResourceId<I, T>, platform?: Platform<any, any>) => any
 interface ResourceProvider<I extends string, T, F extends (...args: any[]) => ResourceConstructor<I, T>> {
   type: ResourceType<I, T>
   factory: F
