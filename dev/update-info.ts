@@ -35,6 +35,10 @@ async function generateTsHeader(fileName: string, projectName: string, projectIn
 `
 }
 
+function joinPath(...segments: string[]): string {
+  return segments.join('/')
+}
+
 async function updatePackageJson(file: string, projectInfo: any) {
   const packageJsonText = await Bun.file(file).text()
   const packageJson = JSON.parse(packageJsonText)
@@ -54,23 +58,35 @@ async function updatePackages() {
   const rootPackageText = await Bun.file('package.json').text()
   const rootPackage = JSON.parse(rootPackageText)
 
-  for (const pattern of rootPackage.workspaces) {
-    console.log(`Scanning workspace pattern: ${pattern}`)
-    const glob = new Glob(pattern)
+  // Ensure that we scan from the project's root directory
+  const projectRoot = process.cwd()
 
-    for await (const file of glob.scan('.')) {
-      if (file.endsWith('package.json')) {
-        console.log(`Updating package.json: ${file}`)
+  for (const workspace of rootPackage.workspaces) {
+    const workspaceGlob = `${workspace}/**/*` // Modified to use recursive glob pattern
+    console.log(`Scanning workspace pattern: ${workspaceGlob}`)
+    const glob = new Glob(workspaceGlob) // Use the modified pattern here
+
+    for await (const file of glob.scan({ cwd: projectRoot })) {
+      const relativePath = file.replace(projectRoot + '/', '') // Remove the root path
+
+      // If we found a package.json file, update it
+      if (relativePath.endsWith('package.json')) {
+        console.log(`Updating package.json: ${relativePath}`)
         await updatePackageJson(file, projectInfo)
-      } else if (file.endsWith('.ts')) {
-        console.log(`Checking TypeScript file: ${file}`)
-        const dirName = getDirName(file)
+      }
+
+      // If we found a `.ts` file, update its header
+      else if (relativePath.endsWith('.ts')) {
+        console.log(`Updating TypeScript file: ${relativePath}`)
+        const dirName = getDirName(relativePath)
         const packageJsonPath = `${dirName}/package.json`
-        if (Bun.file(packageJsonPath).size > 0) {
-          const packageJsonText = await Bun.file(packageJsonPath).text()
+        const packageJsonFile = Bun.file(joinPath(projectRoot, packageJsonPath))
+
+        if (packageJsonFile.size > 0) {
+          const packageJsonText = await packageJsonFile.text()
           const packageJson = JSON.parse(packageJsonText)
           const projectName = packageJson.name.replace(/^@huly\//, '')
-          const header = await generateTsHeader(file.split('/').pop() || '', projectName, projectInfo)
+          const header = await generateTsHeader(relativePath.split('/').pop() || '', projectName, projectInfo)
           await updateTsFile(file, header)
         }
       }
