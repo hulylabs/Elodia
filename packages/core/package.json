@@ -1,6 +1,6 @@
 {
   "name": "@huly/core",
-  "version": "1.0.0-alpha.1+20240321-sha.28345dd",
+  "version": "1.0.0-alpha.1+20240321-sha.f188d8b",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -14,5 +14,14 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
-  }
+  },
+  "description": "Huly® Platform™ Core",
+  "homepage": "https://huly.dev",
+  "license": "EPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huly-dev/core.git"
+  },
+  "author": "Hardcore Engineering, Inc. <hey@huly.io> (https://huly.io)",
+  "contributors": ["Andrey Platov <andrey@huly.io> (https://hardcoreeng.com)"]
 }

@@ -27,7 +27,6 @@ async function processPackage(filePath: string): Promise<void> {
     const newPackageData = {
       ...packageData,
       ...projectInfo['package.json'],
-      ...projectInfo.other,
       version: newVersion,
     }
     const updatedPackageJson = JSON.stringify(newPackageData, null, 2)
