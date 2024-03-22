@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { IntlString, ResourceId } from '@huly/platform'
+import type { ResourceId } from '@huly/platform'
 import type { Class, Doc, Obj, Ref } from './model'
 
 export abstract class UXDeclaration {

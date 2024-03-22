@@ -1,2 +1,3 @@
-# Huly Core Packages
+# Elodia
 
+Huly® Platform™ — Core Packages
