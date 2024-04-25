@@ -6,14 +6,15 @@
     "license": "EPL-2.0",
     "repository": {
       "type": "git",
-      "url": "https://github.com/huly-dev/elodia.git"
+      "url": "https://github.com/huly-dev/Elodia.git"
     },
     "author": "Hardcore Engineering Inc <hey@huly.io> (https://huly.dev)",
     "contributors": ["Andrey Platov <andrey@hardcoreeng.com>"]
   },
   "other": {
     "company": "Hardcore Engineering Inc",
+    "codename": "Elodia",
     "full_license": "Eclipse Public License v2.0",
-    "year": "2024"
+    "year_start": "2024"
   }
 }
