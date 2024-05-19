@@ -3,7 +3,7 @@
 
   import type { DocFactory, DocId, Container } from '@huly/crdt'
   import Quill, { type EmitterSource } from 'quill'
-  import { Op } from 'quill-delta'
+  import { type Op } from 'quill-delta'
   import 'quill/dist/quill.core.css'
 
   export let docId: DocId
