@@ -1,14 +1,17 @@
 {
-  "name": "@huly/crdt-loro-wasm",
-  "module": "src/index.ts",
-  "type": "module",
-  "depenencies": {
-    "@huly/crdt": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  }
+	"name": "@huly/crdt-loro-wasm",
+	"version": "0.0.1",
+	"module": "src/index.ts",
+	"types": "src/index.ts",
+	"type": "module",
+	"dependencies": {
+		"@huly/crdt": "workspace:*",
+		"loro-crdt": "^0.15.4"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	}
 }

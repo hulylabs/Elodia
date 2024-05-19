@@ -1,14 +1,11 @@
 {
   "name": "elodia",
-  "private": false,
-  "workspaces": ["packages/*"],
-  "scripts": {
-    "update-info": "bun ./dev/update-info.ts"
-  },
   "devDependencies": {
     "prettier": "^3.2.5"
   },
-  "dependencies": {
-    "loro-crdt": "^0.15.4"
-  }
+  "private": true,
+  "scripts": {
+    "update-info": "bun ./dev/update-info.ts"
+  },
+  "workspaces": ["packages/*"]
 }
