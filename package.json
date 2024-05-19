@@ -1,11 +1,11 @@
 {
-  "name": "elodia",
-  "devDependencies": {
-    "prettier": "^3.2.5"
-  },
-  "private": true,
-  "scripts": {
-    "update-info": "bun ./dev/update-info.ts"
-  },
-  "workspaces": ["packages/*"]
+	"name": "elodia",
+	"devDependencies": {
+		"prettier": "^3.2.5"
+	},
+	"private": true,
+	"scripts": {
+		"update-info": "bun ./dev/update-info.ts"
+	},
+	"workspaces": ["packages/*"]
 }

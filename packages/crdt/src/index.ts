@@ -26,11 +26,11 @@ export interface Crdt {
   close(docId: DocId): Promise<void>
 }
 
-interface Doc {
+export interface Doc {
   readonly uuid: string
   container(containerId: string, listener: OpListener): Container
 }
-interface Container {
+export interface Container {
   open(): Promise<Op[]>
   apply(ops: Op[], origin: string): Promise<Uint8Array>
   close(): void
@@ -85,18 +85,20 @@ function unsubscribe(crdt: Crdt, docId: DocId, containerId: ContainerId, listene
   }
 }
 
-export const docFactory =
-  (crdt: Crdt) =>
-  (uuid: string): Doc => ({
+export type DocFactory = (uuid: DocId) => Doc
+
+export const createDocFactory =
+  (crdt: Crdt): DocFactory =>
+  (uuid: DocId): Doc => ({
     uuid,
     container: (containerId: string, listener: OpListener): Container => {
       subscribe(uuid, containerId, listener)
       return {
         open: () => crdt.open(uuid, containerId),
         apply: (ops: Op[], origin: string) => crdt.apply(uuid, containerId, ops, origin),
-        close: () => unsubscribe(crdt, uuid, containerId, listener),
+        close: () => unsubscribe(crdt, uuid, containerId, listener)
       }
-    },
+    }
   })
 
 export function listen(docId: DocId, containerId: ContainerId, ops: Op[], origin?: string) {

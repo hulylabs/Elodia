@@ -5,8 +5,7 @@
 	"types": "src/index.ts",
 	"type": "module",
 	"devDependencies": {
-		"@types/bun": "latest",
-		"@types/uuid": "^9.0.8"
+		"@types/bun": "latest"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"
